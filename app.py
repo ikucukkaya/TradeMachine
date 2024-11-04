@@ -93,8 +93,8 @@ def calculate_score(player_name, week, data):
     Enforces minimum values of 2 for 'Regular' and 'Projection'.
     """
     player_data = data[data['Player_Name'] == player_name].iloc[0]
-    regular = max(2, player_data['Regular'])
-    projection = max(2, player_data['Projection'])
+    regular = player_data['Regular']
+    projection = player_data['Projection']
     score = (((20 - week) * projection) / 20) + ((week * regular) / 20)
     score = max(2, score)  # Ensure the total score is at least 2
     return score
@@ -115,8 +115,8 @@ def evaluate_trade(data, team1_players, team2_players):
     for player in team1_players:
         score = calculate_score(player, week, data)
         player_data = data[data['Player_Name'] == player].iloc[0]
-        regular = max(2, player_data['Regular'])
-        projection = max(2, player_data['Projection'])
+        regular = player_data['Regular']
+        projection = player_data['Projection']
         team1_scores.append(score)
 
         formatted_detail = (
@@ -134,8 +134,8 @@ def evaluate_trade(data, team1_players, team2_players):
     for player in team2_players:
         score = calculate_score(player, week, data)
         player_data = data[data['Player_Name'] == player].iloc[0]
-        regular = max(2, player_data['Regular'])
-        projection = max(2, player_data['Projection'])
+        regular = player_data['Regular']
+        projection = player_data['Projection']
         team2_scores.append(score)
 
         formatted_detail = (
