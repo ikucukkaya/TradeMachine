@@ -197,7 +197,7 @@ def evaluate_trade(data, team1_players, team2_players):
     else:
         approval_message = f"""
         <div style='text-align: center; color: white;'>
-            <h3 style='color: red;'>Trade Not Approved!</h3>
+            <h3 style='color: red;'>Trade Not Approved! (Girsin)</h3>
         </div>
         """
 
