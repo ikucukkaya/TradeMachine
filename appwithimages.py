@@ -274,7 +274,7 @@ def evaluate_trade(data, team1_players, team2_players):
     trade_ratio = min(team1_total / team2_total, team2_total / team1_total)
 
     # Center the Trade Ratio
-    st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.3f}</h3>", unsafe_allow_html=True)
 
     # Determine Trade Approval
     if trade_ratio >= 0.80:
