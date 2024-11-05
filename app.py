@@ -315,7 +315,7 @@ def display_player_rankings(data):
 
 def main():
     # Set Streamlit page configuration
-    st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
+    st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide", initial_sidebar_state="collapsed")
 
     # Center the title
     st.markdown("<h1 style='text-align: center;'>🏀 Trade Machine 🏀</h1>", unsafe_allow_html=True)
