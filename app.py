@@ -184,7 +184,6 @@ def evaluate_trade(data, team1_players, team2_players):
     # Calculate Trade Ratio
     trade_ratio = round(min(team1_total / team2_total, team2_total / team1_total), 2)
 
-
     # Center the Trade Ratio
     st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h3>", unsafe_allow_html=True)
 
@@ -221,16 +220,11 @@ def display_injured_players(data):
 
 def display_player_rankings(data):
     """
-    Calculates and displays the player rankings based on Total Score.
+    Calculates and displays the player rankings based on Regular, Projection, and Total_Score.
+    Displays three separate tables side by side with two decimal places and emojis in titles.
     """
     # Calculate week number
     week = calculate_week()
-    
-    # Get current date for display purposes
-    current_date = datetime.now().strftime("%d_%m_%Y")
-    
-    # Create display column name
-    total_score_display_column = f"Total_Score (Week {week})"
     
     # Calculate Total_Score for each player without enforcing minimums
     data['Total_Score'] = data.apply(
@@ -238,37 +232,82 @@ def display_player_rankings(data):
         axis=1
     ).round(2)
     
-    # Create display values for Total_Score
-    data[total_score_display_column] = data['Total_Score'].apply(lambda x: f"{x:.2f}")
+    # Create separate DataFrames for Regular, Projection, and Total_Score
+    df_regular = data[['Player_Name', 'Regular']].copy()
+    df_projection = data[['Player_Name', 'Projection']].copy()
+    df_total = data[['Player_Name', 'Total_Score']].copy()
     
-    # Sort data by Total_Score descending and reset index
-    sorted_data = data.sort_values(by='Total_Score', ascending=False).reset_index(drop=True)
+    # Sort each DataFrame in descending order based on the respective score
+    df_regular_sorted = df_regular.sort_values(by='Regular', ascending=False).reset_index(drop=True)
+    df_projection_sorted = df_projection.sort_values(by='Projection', ascending=False).reset_index(drop=True)
+    df_total_sorted = df_total.sort_values(by='Total_Score', ascending=False).reset_index(drop=True)
     
-    # Set 'Rank' as the index starting from 1
-    sorted_data.index = sorted_data.index + 1
-    sorted_data.index.name = 'Rank'
+    # Add Rank column starting from 1
+    df_regular_sorted.index += 1
+    df_projection_sorted.index += 1
+    df_total_sorted.index += 1
     
-    # Reorder columns
-    sorted_data = sorted_data[['Player_Name', 'Regular', 'Projection', total_score_display_column]]
+    df_regular_sorted.index.name = 'Rank'
+    df_projection_sorted.index.name = 'Rank'
+    df_total_sorted.index.name = 'Rank'
     
-    # Center the table and download button together
-    col_center = st.columns([1, 3, 1])
+    # Rename columns to have only 'Player_Name' and 'Score'
+    df_regular_sorted = df_regular_sorted.rename(columns={'Regular': 'Score'})
+    df_projection_sorted = df_projection_sorted.rename(columns={'Projection': 'Score'})
+    df_total_sorted = df_total_sorted.rename(columns={'Total_Score': 'Score'})
+    
+    # Select only Player_Name and Score
+    df_regular_final = df_regular_sorted[['Player_Name', 'Score']].copy()
+    df_projection_final = df_projection_sorted[['Player_Name', 'Score']].copy()
+    df_total_final = df_total_sorted[['Player_Name', 'Score']].copy()
+    
+    # Format the 'Score' columns to two decimal places as strings
+    df_regular_final['Score'] = df_regular_final['Score'].map("{:.2f}".format)
+    df_projection_final['Score'] = df_projection_final['Score'].map("{:.2f}".format)
+    df_total_final['Score'] = df_total_final['Score'].map("{:.2f}".format)
+    
+    # Create three columns in Streamlit to display the tables side by side
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**🏅 Regular Scores**")
+        st.table(df_regular_final)
+    
+    with col2:
+        st.markdown("**🔮 Projection Scores**")
+        st.table(df_projection_final)
+    
+    with col3:
+        st.markdown(f"**🏆 Total Scores (Week {week})**")
+        st.table(df_total_final)
+    
+    # Provide option to download the rankings
+    # Combine all rankings into a single Excel file with separate sheets
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Ensure that 'Score' columns are saved as float for Excel
+        df_regular_final_download = df_regular_sorted[['Player_Name', 'Score']].copy()
+        df_regular_final_download['Score'] = df_regular_final_download['Score'].astype(float)
+        df_projection_final_download = df_projection_sorted[['Player_Name', 'Score']].copy()
+        df_projection_final_download['Score'] = df_projection_final_download['Score'].astype(float)
+        df_total_final_download = df_total_sorted[['Player_Name', 'Score']].copy()
+        df_total_final_download['Score'] = df_total_final_download['Score'].astype(float)
+        
+        df_regular_final_download.to_excel(writer, sheet_name='Regular Scores', index=True)
+        df_projection_final_download.to_excel(writer, sheet_name='Projection Scores', index=True)
+        df_total_final_download.to_excel(writer, sheet_name='Total Scores', index=True)
+    processed_data = output.getvalue()
+    
+    # Get current date for the filename
+    current_date = datetime.now().strftime("%d_%m_%Y")
+    
+    # Center the download button
+    col_center = st.columns([1, 0.5, 1])
     with col_center[1]:
-        # Display the DataFrame with 'Rank' as index
-        st.dataframe(sorted_data)
-        
-        # Provide option to download the data
-        output = BytesIO()
-        # Save to Excel in memory, include the index to have 'Rank' in the Excel file
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            sorted_data.to_excel(writer, index=True)
-        processed_data = output.getvalue()
-        
-        # Create a download button
         st.download_button(
-            label="Download Player Rankings as Excel",
+            label="📥 Download Player Rankings",
             data=processed_data,
-            file_name=f"Player_Scores_{current_date}.xlsx",
+            file_name=f"Player_Rankings_{current_date}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
