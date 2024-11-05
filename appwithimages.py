@@ -211,20 +211,17 @@ def evaluate_trade(data, team1_players, team2_players):
         empty_slots_info = f"Team 2 receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
 
-    # Display Trade Evaluation side by side
-    col1, col2 = st.columns(2)
-
-    # Trade Evaluation Bölümünde, oyuncu detaylarını gösterirken:
+    # Display Trade Evaluation side by side with adjusted widths
+    col1, col2 = st.columns([3, 2])  # Adjusted ratios for better layout
 
     with col1:
         st.markdown(f"<h3 style='text-align: center;'>Team 1 Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
         for detail in team1_details:
             with st.container():
-                # Kolon oranlarını ayarlayarak metin ve fotoğraf genişliklerini değiştirebilirsiniz
-                img_col, text_col = st.columns([1, 4])  # Fotoğraf kolonu daha dar, metin kolonu daha geniş
+                # Adjust column ratios if needed
+                img_col, text_col = st.columns([1, 4])  # Photo column narrower
                 with img_col:
-                    # Fotoğraf genişliğini ayarlayabilirsiniz
-                    st.image(detail['image_path'], width=60)  # Fotoğraf genişliğini 70 piksel olarak ayarladık
+                    st.image(detail['image_path'], width=60)
                 with text_col:
                     if detail['player'] == 'Empty Slot':
                         st.markdown(
@@ -239,17 +236,13 @@ def evaluate_trade(data, team1_players, team2_players):
                             f"</div>",
                             unsafe_allow_html=True
                         )
-    # Trade Evaluation Bölümünde, oyuncu detaylarını gösterirken:
-
     with col2:
         st.markdown(f"<h3 style='text-align: center;'>Team 2 Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
         for detail in team2_details:
             with st.container():
-                # Kolon oranlarını ayarlayarak metin ve fotoğraf genişliklerini değiştirebilirsiniz
-                img_col, text_col = st.columns([1, 4])  # Fotoğraf kolonu daha dar, metin kolonu daha geniş
+                img_col, text_col = st.columns([1, 4])  # Photo column narrower
                 with img_col:
-                    # Fotoğraf genişliğini ayarlayabilirsiniz
-                    st.image(detail['image_path'], width=60)  # Fotoğraf genişliğini 70 piksel olarak ayarladık
+                    st.image(detail['image_path'], width=60)
                 with text_col:
                     if detail['player'] == 'Empty Slot':
                         st.markdown(
@@ -316,76 +309,133 @@ def display_player_rankings(data):
     # Calculate week number
     week = calculate_week()
     
-    # Calculate Total_Score for each player without enforcing minimums
+    # ----------------------- New: Regular Season Rankings -----------------------
+    regular_season_path = os.path.join(data_dir, "2024-25_NBA_Regular_Season_Updated_daily.xlsx")
+    try:
+        df_regular_season = pd.read_excel(regular_season_path)
+        # Select required columns
+        required_columns = ['PLAYER', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+        missing_cols = set(required_columns) - set(df_regular_season.columns)
+        if missing_cols:
+            st.error(f"Regular Season Rankings is missing columns: {', '.join(missing_cols)}")
+            df_regular_season = pd.DataFrame()
+        else:
+            df_regular_season = df_regular_season[required_columns].copy()
+            # Rename 'PLAYER' to 'Player_Name' if necessary
+            if 'PLAYER' in df_regular_season.columns:
+                df_regular_season = df_regular_season.rename(columns={'PLAYER': 'Player_Name'})
+            # Add Rank column starting from 1
+            df_regular_season.reset_index(inplace=True)
+            df_regular_season.rename(columns={'index': 'Rank'}, inplace=True)
+            df_regular_season['Rank'] = df_regular_season.index + 1
+            # Reorder columns to have Rank first
+            columns_order = ['Rank', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            df_regular_season = df_regular_season[columns_order]
+            # Format numerical columns: FG% and FT% to three decimals, others to two
+            for col in df_regular_season.columns:
+                if col in ['FG%', 'FT%']:
+                    df_regular_season[col] = df_regular_season[col].map("{:.3f}".format)
+                elif col not in ['Rank', 'Player_Name']:
+                    df_regular_season[col] = df_regular_season[col].map("{:.2f}".format)
+    except Exception as e:
+        st.error(f"Failed to load Regular Season Rankings: {e}")
+        df_regular_season = pd.DataFrame()
+
+    # ----------------------- New: Rest of Season Projections -----------------------
+    rest_of_season_path = os.path.join(data_dir, "2024-25_Rest_of_Season_Rankings_Projections_updated_daily.xlsx")
+    try:
+        df_rest_of_season = pd.read_excel(rest_of_season_path)
+        # Select required columns (assuming similar structure; adjust if different)
+        required_columns = ['PLAYER', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+        missing_cols = set(required_columns) - set(df_rest_of_season.columns)
+        if missing_cols:
+            st.error(f"Rest of Season Projections is missing columns: {', '.join(missing_cols)}")
+            df_rest_of_season = pd.DataFrame()
+        else:
+            df_rest_of_season = df_rest_of_season[required_columns].copy()
+            # Rename 'PLAYER' to 'Player_Name' if necessary
+            if 'PLAYER' in df_rest_of_season.columns:
+                df_rest_of_season = df_rest_of_season.rename(columns={'PLAYER': 'Player_Name'})
+            # Add Rank column starting from 1
+            df_rest_of_season.reset_index(inplace=True)
+            df_rest_of_season.rename(columns={'index': 'Rank'}, inplace=True)
+            df_rest_of_season['Rank'] = df_rest_of_season.index + 1
+            # Reorder columns to have Rank first
+            columns_order = ['Rank', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            df_rest_of_season = df_rest_of_season[columns_order]
+            # Format numerical columns: FG% and FT% to three decimals, others to two
+            for col in df_rest_of_season.columns:
+                if col in ['FG%', 'FT%']:
+                    df_rest_of_season[col] = df_rest_of_season[col].map("{:.3f}".format)
+                elif col not in ['Rank', 'Player_Name']:
+                    df_rest_of_season[col] = df_rest_of_season[col].map("{:.2f}".format)
+    except Exception as e:
+        st.error(f"Failed to load Rest of Season Projections: {e}")
+        df_rest_of_season = pd.DataFrame()
+
+    # ----------------------- Existing: Total_Score Rankings -----------------------
     data['Total_Score'] = data.apply(
         lambda row: (((20 - week) * row['Projection']) / 20) + ((week * row['Regular']) / 20),
         axis=1
     ).round(2)
     
-    # Create separate DataFrames for Regular, Projection, and Total_Score
-    df_regular = data[['Player_Name', 'Regular']].copy()
-    df_projection = data[['Player_Name', 'Projection']].copy()
+    # Create Total_Score DataFrame
     df_total = data[['Player_Name', 'Total_Score']].copy()
-    
-    # Sort each DataFrame in descending order based on the respective score
-    df_regular_sorted = df_regular.sort_values(by='Regular', ascending=False).reset_index(drop=True)
-    df_projection_sorted = df_projection.sort_values(by='Projection', ascending=False).reset_index(drop=True)
     df_total_sorted = df_total.sort_values(by='Total_Score', ascending=False).reset_index(drop=True)
-    
-    # Add Rank column starting from 1
-    df_regular_sorted.index += 1
-    df_projection_sorted.index += 1
     df_total_sorted.index += 1
-    
-    df_regular_sorted.index.name = 'Rank'
-    df_projection_sorted.index.name = 'Rank'
     df_total_sorted.index.name = 'Rank'
-    
-    # Rename columns to have only 'Player_Name' and 'Score'
-    df_regular_sorted = df_regular_sorted.rename(columns={'Regular': 'Score'})
-    df_projection_sorted = df_projection_sorted.rename(columns={'Projection': 'Score'})
     df_total_sorted = df_total_sorted.rename(columns={'Total_Score': 'Score'})
-    
-    # Select only Player_Name and Score
-    df_regular_final = df_regular_sorted[['Player_Name', 'Score']].copy()
-    df_projection_final = df_projection_sorted[['Player_Name', 'Score']].copy()
-    df_total_final = df_total_sorted[['Player_Name', 'Score']].copy()
-    
-    # Format the 'Score' columns to two decimal places as strings
-    df_regular_final['Score'] = df_regular_final['Score'].map("{:.2f}".format)
-    df_projection_final['Score'] = df_projection_final['Score'].map("{:.2f}".format)
+    df_total_final = df_total_sorted.reset_index()[['Rank', 'Player_Name', 'Score']]
     df_total_final['Score'] = df_total_final['Score'].map("{:.2f}".format)
-    
-    # Create three columns in Streamlit to display the tables side by side
-    col1, col2, col3 = st.columns(3)
-    
+
+    # ----------------------- Display Tables Side by Side -----------------------
+    # Create three columns with adjusted widths
+    col1, col2, col3 = st.columns([3, 3, 1])  # Adjusted ratios: first two tables wider
+
     with col1:
-        st.markdown("**🏅 Regular Scores**")
-        st.table(df_regular_final)
-    
+        if not df_regular_season.empty:
+            st.markdown("**📊 Regular Season Rankings**")
+            st.dataframe(df_regular_season, hide_index=True)
+        else:
+            st.info("Regular Season Rankings not available.")
+
     with col2:
-        st.markdown("**🔮 Projection Scores**")
-        st.table(df_projection_final)
-    
+        if not df_rest_of_season.empty:
+            st.markdown("**🔮 Rest of Season Projections**")
+            st.dataframe(df_rest_of_season, hide_index=True)
+        else:
+            st.info("Rest of Season Projections not available.")
+
     with col3:
         st.markdown(f"**🏆 Total Scores (Week {week})**")
-        st.table(df_total_final)
-    
-    # Provide option to download the rankings
+        st.dataframe(df_total_final, hide_index=True)
+
+    # ----------------------- Provide option to download the rankings -----------------------
     # Combine all rankings into a single Excel file with separate sheets
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Ensure that 'Score' columns are saved as float for Excel
-        df_regular_final_download = df_regular_sorted[['Player_Name', 'Score']].copy()
-        df_regular_final_download['Score'] = df_regular_final_download['Score'].astype(float)
-        df_projection_final_download = df_projection_sorted[['Player_Name', 'Score']].copy()
-        df_projection_final_download['Score'] = df_projection_final_download['Score'].astype(float)
-        df_total_final_download = df_total_sorted[['Player_Name', 'Score']].copy()
-        df_total_final_download['Score'] = df_total_final_download['Score'].astype(float)
+        # Regular Season Rankings
+        if not df_regular_season.empty:
+            # Convert numerical columns back to float for Excel
+            df_regular_season_download = df_regular_season.copy()
+            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            for col in numerical_cols:
+                df_regular_season_download[col] = df_regular_season_download[col].astype(float)
+            df_regular_season_download.to_excel(writer, sheet_name='Regular Season Rankings', index=False)
         
-        df_regular_final_download.to_excel(writer, sheet_name='Regular Scores', index=True)
-        df_projection_final_download.to_excel(writer, sheet_name='Projection Scores', index=True)
-        df_total_final_download.to_excel(writer, sheet_name='Total Scores', index=True)
+        # Rest of Season Projections
+        if not df_rest_of_season.empty:
+            df_rest_of_season_download = df_rest_of_season.copy()
+            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            for col in numerical_cols:
+                df_rest_of_season_download[col] = df_rest_of_season_download[col].astype(float)
+            df_rest_of_season_download.to_excel(writer, sheet_name='Rest of Season Projections', index=False)
+        
+        # Total Scores
+        df_total_download = df_total_sorted.copy()
+        df_total_download['Score'] = df_total_download['Score'].astype(float)
+        df_total_download.reset_index(inplace=True)  # Convert 'Rank' from index to column
+        df_total_download.to_excel(writer, sheet_name='Total Scores', index=False)
     processed_data = output.getvalue()
     
     # Get current date for the filename
@@ -420,12 +470,12 @@ def main():
             st.session_state['data'] = merged_df
             st.session_state['last_updated'] = get_last_updated(merged_scores_path, injury_report_path)
             data = merged_df
-            st.success("Data loaded successfully.")
+            st.sidebar.success("Data loaded successfully.")
         else:
-            st.error("Loaded data is empty. Please ensure the data files are correct.")
+            st.sidebar.error("Loaded data is empty. Please ensure the data files are correct.")
             data = None
     else:
-        st.error("Data files not found. Please place 'merged_scores.xlsx' and 'nba-injury-report.xlsx' in the 'data' directory.")
+        st.sidebar.error("Data files not found. Please place 'merged_scores.xlsx' and 'nba-injury-report.xlsx' in the 'data' directory.")
         data = None
 
     # ------------------- Sidebar: Data Information -------------------
@@ -479,7 +529,7 @@ def main():
                 st.markdown("<div style='text-align: center;'><strong>Selected Players for Team 2:</strong></div>", unsafe_allow_html=True)
                 for player in team2_selected:
                     st.markdown(f"<div style='text-align: center;'>- {player}</div>", unsafe_allow_html=True)
-        
+    
         # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.4, 1])
         with col_center[1]:
