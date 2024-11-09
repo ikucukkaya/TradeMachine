@@ -531,7 +531,7 @@ def main():
                     st.markdown(f"<div style='text-align: center;'>- {player}</div>", unsafe_allow_html=True)
     
         # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.4, 1])
+        col_center = st.columns([1, 0.3, 1])
         with col_center[1]:
             submitted = st.form_submit_button("📈 Evaluate Trade 📈")
 
@@ -560,7 +560,7 @@ def main():
     button_label_rankings = "Hide Player Rankings" if st.session_state.get('show_rankings', False) else "Show Player Rankings"
 
     # Center the 'Show/Hide Player Rankings' button
-    col_center = st.columns([1, 0.4, 1])
+    col_center = st.columns([1, 0.3, 1])
     with col_center[1]:
         st.button(button_label_rankings, on_click=toggle_show_rankings, key="rankings_button")
 
@@ -585,7 +585,7 @@ def main():
     button_label_injured = "Hide Injured Players" if st.session_state.get('show_injured', False) else "Show Injured Players"
 
     # Center the 'Show/Hide Injured Players' button using columns
-    col_center = st.columns([1, 0.4, 1])
+    col_center = st.columns([1, 0.3, 1])
     with col_center[1]:
         st.button(button_label_injured, on_click=toggle_show_injured, key="injured_button")
 
