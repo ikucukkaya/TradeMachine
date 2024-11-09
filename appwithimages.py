@@ -394,20 +394,20 @@ def display_player_rankings(data):
 
     with col1:
         if not df_regular_season.empty:
-            st.markdown("**📊 Regular Season Rankings**")
+            st.markdown("📊 Regular Season Rankings 📊")
             st.dataframe(df_regular_season, hide_index=True)
         else:
             st.info("Regular Season Rankings not available.")
 
     with col2:
         if not df_rest_of_season.empty:
-            st.markdown("**🔮 Rest of Season Projections**")
+            st.markdown("🔮 Rest of Season Projections 🔮")
             st.dataframe(df_rest_of_season, hide_index=True)
         else:
             st.info("Rest of Season Projections not available.")
 
     with col3:
-        st.markdown(f"**🏆 Total Scores (Week {week})**")
+        st.markdown(f"🏆 Total Scores (Week {week}) 🏆")
         st.dataframe(df_total_final, hide_index=True)
 
     # ----------------------- Provide option to download the rankings -----------------------
@@ -533,7 +533,7 @@ def main():
         # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.4, 1])
         with col_center[1]:
-            submitted = st.form_submit_button("📈 Evaluate Trade")
+            submitted = st.form_submit_button("📈 Evaluate Trade 📈")
 
     if submitted:
         # Check for duplicates
@@ -550,7 +550,7 @@ def main():
     st.markdown("---")
 
     # Center the heading
-    st.markdown("<h3 style='text-align: center;'>🏀 Player Rankings</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>🏀 Player Rankings 🏀</h3>", unsafe_allow_html=True)
 
     # Define the callback function for rankings
     def toggle_show_rankings():
@@ -573,7 +573,7 @@ def main():
 
     # Center the heading
     st.markdown(
-        "<h3 style='text-align: center;'>🏥 Injured Players Information</h3>",
+        "<h3 style='text-align: center;'>🏥 Injured Players Information 🏥</h3>",
         unsafe_allow_html=True
     )
 
