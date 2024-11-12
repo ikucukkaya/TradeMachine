@@ -71,8 +71,6 @@ def read_data(scores_path, injury_path):
         if 'Player' in merged_df.columns:
             merged_df.drop(columns=['Player'], inplace=True)
 
-        # We no longer enforce minimums here
-
         return merged_df
     except Exception as e:
         st.error(f"Failed to read data: {e}")
@@ -93,7 +91,7 @@ def get_last_updated(scores_path, injury_path):
         merged_scores_mtime = os.path.getmtime(merged_scores_file_path)
 
         latest_datetime = max(datetime.fromtimestamp(rotowire_mtime), datetime.fromtimestamp(merged_scores_mtime))
-        formatted_datetime = latest_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        formatted_datetime = latest_datetime.strftime("%d-%m-%Y %H:%M:%S")
 
         return formatted_datetime
     except Exception as e:
@@ -280,7 +278,7 @@ def evaluate_trade(data, team1_players, team2_players):
     else:
         approval_message = f"""
         <div style='text-align: center; color: white;'>
-            <h3 style='color: red;'>Trade Not Approved! (Girsin)</h3>
+            <h3 style='color: red;'>Trade Not Approved!</h3>
         </div>
         """
 
@@ -304,12 +302,12 @@ def display_injured_players(data):
 def display_player_rankings(data):
     """
     Calculates and displays the player rankings based on Regular, Projection, and Total_Score.
-    Displays three separate tables side by side with two decimal places and emojis in titles.
+    Displays three separate tables side by side with specified decimal places.
     """
     # Calculate week number
     week = calculate_week()
     
-    # ----------------------- New: Regular Season Rankings -----------------------
+    # ----------------------- Regular Season Rankings -----------------------
     regular_season_path = os.path.join(data_dir, "2024-25_NBA_Regular_Season_Updated_daily.xlsx")
     try:
         df_regular_season = pd.read_excel(regular_season_path)
@@ -321,31 +319,31 @@ def display_player_rankings(data):
             df_regular_season = pd.DataFrame()
         else:
             df_regular_season = df_regular_season[required_columns].copy()
-            # Rename 'PLAYER' to 'Player_Name' if necessary
-            if 'PLAYER' in df_regular_season.columns:
-                df_regular_season = df_regular_season.rename(columns={'PLAYER': 'Player_Name'})
-            # Add Rank column starting from 1
+            # Rename 'PLAYER' to 'Player_Name'
+            df_regular_season = df_regular_season.rename(columns={'PLAYER': 'Player_Name'})
+            # Ensure numerical columns are float
+            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            for col in numerical_cols:
+                df_regular_season[col] = df_regular_season[col].astype(float)
+            # Remove existing 'Rank' column if present
+            if 'Rank' in df_regular_season.columns:
+                df_regular_season.drop(columns=['Rank'], inplace=True)
+            # Reset index and rename 'index' to 'Rank'
             df_regular_season.reset_index(inplace=True)
             df_regular_season.rename(columns={'index': 'Rank'}, inplace=True)
-            df_regular_season['Rank'] = df_regular_season.index + 1
-            # Reorder columns to have Rank first
+            df_regular_season['Rank'] = df_regular_season['Rank'] + 1
+            # Reorder columns to have 'Rank' first
             columns_order = ['Rank', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
             df_regular_season = df_regular_season[columns_order]
-            # Format numerical columns: FG% and FT% to three decimals, others to two
-            for col in df_regular_season.columns:
-                if col in ['FG%', 'FT%']:
-                    df_regular_season[col] = df_regular_season[col].map("{:.3f}".format)
-                elif col not in ['Rank', 'Player_Name']:
-                    df_regular_season[col] = df_regular_season[col].map("{:.2f}".format)
     except Exception as e:
         st.error(f"Failed to load Regular Season Rankings: {e}")
         df_regular_season = pd.DataFrame()
 
-    # ----------------------- New: Rest of Season Projections -----------------------
+    # ----------------------- Rest of Season Projections -----------------------
     rest_of_season_path = os.path.join(data_dir, "2024-25_Rest_of_Season_Rankings_Projections_updated_daily.xlsx")
     try:
         df_rest_of_season = pd.read_excel(rest_of_season_path)
-        # Select required columns (assuming similar structure; adjust if different)
+        # Select required columns
         required_columns = ['PLAYER', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
         missing_cols = set(required_columns) - set(df_rest_of_season.columns)
         if missing_cols:
@@ -353,89 +351,129 @@ def display_player_rankings(data):
             df_rest_of_season = pd.DataFrame()
         else:
             df_rest_of_season = df_rest_of_season[required_columns].copy()
-            # Rename 'PLAYER' to 'Player_Name' if necessary
-            if 'PLAYER' in df_rest_of_season.columns:
-                df_rest_of_season = df_rest_of_season.rename(columns={'PLAYER': 'Player_Name'})
-            # Add Rank column starting from 1
+            # Rename 'PLAYER' to 'Player_Name'
+            df_rest_of_season = df_rest_of_season.rename(columns={'PLAYER': 'Player_Name'})
+            # Ensure numerical columns are float
+            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+            for col in numerical_cols:
+                df_rest_of_season[col] = df_rest_of_season[col].astype(float)
+            # Remove existing 'Rank' column if present
+            if 'Rank' in df_rest_of_season.columns:
+                df_rest_of_season.drop(columns=['Rank'], inplace=True)
+            # Reset index and rename 'index' to 'Rank'
             df_rest_of_season.reset_index(inplace=True)
             df_rest_of_season.rename(columns={'index': 'Rank'}, inplace=True)
-            df_rest_of_season['Rank'] = df_rest_of_season.index + 1
-            # Reorder columns to have Rank first
+            df_rest_of_season['Rank'] = df_rest_of_season['Rank'] + 1
+            # Reorder columns to have 'Rank' first
             columns_order = ['Rank', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
             df_rest_of_season = df_rest_of_season[columns_order]
-            # Format numerical columns: FG% and FT% to three decimals, others to two
-            for col in df_rest_of_season.columns:
-                if col in ['FG%', 'FT%']:
-                    df_rest_of_season[col] = df_rest_of_season[col].map("{:.3f}".format)
-                elif col not in ['Rank', 'Player_Name']:
-                    df_rest_of_season[col] = df_rest_of_season[col].map("{:.2f}".format)
     except Exception as e:
         st.error(f"Failed to load Rest of Season Projections: {e}")
         df_rest_of_season = pd.DataFrame()
 
-    # ----------------------- Existing: Total_Score Rankings -----------------------
+    # ----------------------- Total_Score Rankings -----------------------
     data['Total_Score'] = data.apply(
         lambda row: (((20 - week) * row['Projection']) / 20) + ((week * row['Regular']) / 20),
         axis=1
     ).round(2)
     
-    # Create Total_Score DataFrame
     df_total = data[['Player_Name', 'Total_Score']].copy()
     df_total_sorted = df_total.sort_values(by='Total_Score', ascending=False).reset_index(drop=True)
-    df_total_sorted.index += 1
-    df_total_sorted.index.name = 'Rank'
+    # Remove existing 'Rank' column if present
+    if 'Rank' in df_total_sorted.columns:
+        df_total_sorted.drop(columns=['Rank'], inplace=True)
+    # Reset index and rename 'index' to 'Rank'
+    df_total_sorted.reset_index(inplace=True)
+    df_total_sorted.rename(columns={'index': 'Rank'}, inplace=True)
+    df_total_sorted['Rank'] = df_total_sorted['Rank'] + 1
     df_total_sorted = df_total_sorted.rename(columns={'Total_Score': 'Score'})
-    df_total_final = df_total_sorted.reset_index()[['Rank', 'Player_Name', 'Score']]
-    df_total_final['Score'] = df_total_final['Score'].map("{:.2f}".format)
+    # Reorder columns to have 'Rank' first
+    columns_order = ['Rank', 'Player_Name', 'Score']
+    df_total_final = df_total_sorted[columns_order]
+    df_total_final['Score'] = df_total_final['Score'].astype(float)
+
+    # ----------------------- Apply Formatting -----------------------
+    # Format decimal places
+    def format_dataframe(df):
+        df = df.copy()
+        # Format 'FG%' and 'FT%' to three decimals
+        if 'FG%' in df.columns:
+            df['FG%'] = df['FG%'].map("{:.3f}".format)
+        if 'FT%' in df.columns:
+            df['FT%'] = df['FT%'].map("{:.3f}".format)
+        # Format other stats to two decimals
+        for col in ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL', 'Score']:
+            if col in df.columns:
+                df[col] = df[col].map("{:.2f}".format)
+        return df
+
+    df_regular_season_formatted = format_dataframe(df_regular_season)
+    df_rest_of_season_formatted = format_dataframe(df_rest_of_season)
+    df_total_final_formatted = format_dataframe(df_total_final)
+
+    # ----------------------- Apply Color Gradients -----------------------
+    def apply_color_gradients(df):
+        df = df.copy()
+        styled_df = df.style
+
+        # Define color map
+        cmap = 'RdYlGn'  # Red to Yellow to Green
+
+        # Apply gradients
+        if 'FG%' in df.columns:
+            styled_df = styled_df.background_gradient(subset=['FG%'], cmap=cmap)
+        if 'FT%' in df.columns:
+            styled_df = styled_df.background_gradient(subset=['FT%'], cmap=cmap)
+        for col in ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TOTAL', 'Score']:
+            if col in df.columns:
+                styled_df = styled_df.background_gradient(subset=[col], cmap=cmap)
+        if 'TO' in df.columns:
+            # Inverse the color map for turnovers
+            styled_df = styled_df.background_gradient(subset=['TO'], cmap=cmap, 
+                                                      gmap=-df['TO'].astype(float))
+        return styled_df
+
+    # Apply color gradients
+    styled_regular_season = apply_color_gradients(df_regular_season_formatted)
+    styled_rest_of_season = apply_color_gradients(df_rest_of_season_formatted)
+    styled_total_scores = apply_color_gradients(df_total_final_formatted)
 
     # ----------------------- Display Tables Side by Side -----------------------
     # Create three columns with adjusted widths
-    col1, col2, col3 = st.columns([3, 3, 1])  # Adjusted ratios: first two tables wider
+    col1, col2, col3 = st.columns([3, 3, 1])
 
     with col1:
         if not df_regular_season.empty:
             st.markdown("**📊 Regular Season Rankings**")
-            st.dataframe(df_regular_season, hide_index=True)
+            st.dataframe(styled_regular_season, use_container_width=True, hide_index=True)
         else:
             st.info("Regular Season Rankings not available.")
 
     with col2:
         if not df_rest_of_season.empty:
             st.markdown("**🔮 Rest of Season Projections**")
-            st.dataframe(df_rest_of_season, hide_index=True)
+            st.dataframe(styled_rest_of_season, use_container_width=True, hide_index=True)
         else:
             st.info("Rest of Season Projections not available.")
 
     with col3:
         st.markdown(f"**🏆 Total Scores (Week {week})**")
-        st.dataframe(df_total_final, hide_index=True)
+        st.dataframe(styled_total_scores, use_container_width=True, hide_index=True)
 
-    # ----------------------- Provide option to download the rankings -----------------------
+    # ----------------------- Download Rankings -----------------------
     # Combine all rankings into a single Excel file with separate sheets
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         # Regular Season Rankings
         if not df_regular_season.empty:
-            # Convert numerical columns back to float for Excel
-            df_regular_season_download = df_regular_season.copy()
-            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
-            for col in numerical_cols:
-                df_regular_season_download[col] = df_regular_season_download[col].astype(float)
-            df_regular_season_download.to_excel(writer, sheet_name='Regular Season Rankings', index=False)
+            df_regular_season.to_excel(writer, sheet_name='Regular Season Rankings', index=False)
         
         # Rest of Season Projections
         if not df_rest_of_season.empty:
-            df_rest_of_season_download = df_rest_of_season.copy()
-            numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
-            for col in numerical_cols:
-                df_rest_of_season_download[col] = df_rest_of_season_download[col].astype(float)
-            df_rest_of_season_download.to_excel(writer, sheet_name='Rest of Season Projections', index=False)
+            df_rest_of_season.to_excel(writer, sheet_name='Rest of Season Projections', index=False)
         
         # Total Scores
-        df_total_download = df_total_sorted.copy()
-        df_total_download['Score'] = df_total_download['Score'].astype(float)
-        df_total_download.reset_index(inplace=True)  # Convert 'Rank' from index to column
-        df_total_download.to_excel(writer, sheet_name='Total Scores', index=False)
+        df_total_final.to_excel(writer, sheet_name='Total Scores', index=False)
     processed_data = output.getvalue()
     
     # Get current date for the filename
@@ -455,7 +493,7 @@ def display_player_rankings(data):
 
 def main():
     # Set Streamlit page configuration
-    st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide", initial_sidebar_state="collapsed")
+    st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
 
     # Center the title
     st.markdown("<h1 style='text-align: center;'>🏀 Trade Machine 🏀</h1>", unsafe_allow_html=True)
@@ -470,23 +508,30 @@ def main():
             st.session_state['data'] = merged_df
             st.session_state['last_updated'] = get_last_updated(merged_scores_path, injury_report_path)
             data = merged_df
-            st.sidebar.success("Data loaded successfully.")
+            data_load_status = "Data loaded successfully."
         else:
-            st.sidebar.error("Loaded data is empty. Please ensure the data files are correct.")
+            data_load_status = "Loaded data is empty. Please ensure the data files are correct."
             data = None
     else:
-        st.sidebar.error("Data files not found. Please place 'merged_scores.xlsx' and 'nba-injury-report.xlsx' in the 'data' directory.")
+        data_load_status = "Data files not found. Please place 'merged_scores.xlsx' and 'nba-injury-report.xlsx' in the 'data' directory."
         data = None
 
-    # ------------------- Sidebar: Data Information -------------------
-    st.sidebar.header("📊 Data Information")
-
-    # Display Last Updated
+    # ------------------- Display Data Information under the heading -------------------
     if 'last_updated' in st.session_state:
         last_updated = st.session_state['last_updated']
-        st.sidebar.markdown(f"**Last Updated:** {last_updated} Z")
+        st.markdown(
+            f"<p style='text-align: right; font-style: italic;'>Last Updated: "
+            f"<span style='color: green;'>{last_updated} UTC</span></p>",
+            unsafe_allow_html=True
+        )
     else:
-        st.sidebar.markdown("**Last Updated:** Not Available")
+        st.markdown(
+            f"<p style='text-align: center; font-style: italic;'>Last Updated: "
+            f"<span style='color: red;'>Not Available</span></p>",
+            unsafe_allow_html=True
+        )
+    if data_load_status != "Data loaded successfully.":
+        st.error(data_load_status)
 
     if data is None or data.empty:
         st.info("No data available. Please ensure the data files are in place.")
@@ -494,7 +539,7 @@ def main():
 
     # ------------------- Player Selection -------------------
     # Center the heading
-    st.markdown("<h3 style='text-align: center;'>Select Players for Trade</h3>", unsafe_allow_html=True)
+    #st.markdown("<h3 style='text-align: center;'>Select Players for Trade</h3>", unsafe_allow_html=True)
 
     with st.form("trade_form"):
         # Create two columns for Team 1 and Team 2
@@ -550,14 +595,18 @@ def main():
     st.markdown("---")
 
     # Center the heading
-    st.markdown("<h3 style='text-align: center;'>🏀 Player Rankings</h3>", unsafe_allow_html=True)
+    #st.markdown("<h3 style='text-align: center;'>🏀 Player Rankings</h3>", unsafe_allow_html=True)
+
+    # Initialize 'show_rankings' to True if not already set
+    if 'show_rankings' not in st.session_state:
+        st.session_state['show_rankings'] = True
 
     # Define the callback function for rankings
     def toggle_show_rankings():
-        st.session_state['show_rankings'] = not st.session_state.get('show_rankings', False)
+        st.session_state['show_rankings'] = not st.session_state['show_rankings']
 
     # Determine the button label based on the current state
-    button_label_rankings = "Hide Player Rankings" if st.session_state.get('show_rankings', False) else "Show Player Rankings"
+    button_label_rankings = "Hide Player Rankings" if st.session_state['show_rankings'] else "Show Player Rankings"
 
     # Center the 'Show/Hide Player Rankings' button
     col_center = st.columns([1, 0.4, 1])
@@ -565,7 +614,7 @@ def main():
         st.button(button_label_rankings, on_click=toggle_show_rankings, key="rankings_button")
 
     # Display the player rankings based on the state
-    if st.session_state.get('show_rankings', False):
+    if st.session_state['show_rankings']:
         display_player_rankings(data)
 
     # ------------------- Injured Players Section -------------------
@@ -577,12 +626,16 @@ def main():
         unsafe_allow_html=True
     )
 
+    # Initialize 'show_injured' to False if not already set
+    if 'show_injured' not in st.session_state:
+        st.session_state['show_injured'] = False
+
     # Define the callback function for injured players
     def toggle_show_injured():
-        st.session_state['show_injured'] = not st.session_state.get('show_injured', False)
+        st.session_state['show_injured'] = not st.session_state['show_injured']
 
     # Determine the button label based on the current state
-    button_label_injured = "Hide Injured Players" if st.session_state.get('show_injured', False) else "Show Injured Players"
+    button_label_injured = "Hide Injured Players" if st.session_state['show_injured'] else "Show Injured Players"
 
     # Center the 'Show/Hide Injured Players' button using columns
     col_center = st.columns([1, 0.4, 1])
@@ -590,7 +643,7 @@ def main():
         st.button(button_label_injured, on_click=toggle_show_injured, key="injured_button")
 
     # Display the injured players table based on the state
-    if st.session_state.get('show_injured', False):
+    if st.session_state['show_injured']:
         display_injured_players(data)
 
 if __name__ == "__main__":
