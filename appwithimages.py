@@ -121,9 +121,9 @@ def calculate_score(player_name, week, data):
 
 # ----------------------- Trade Evaluation Function -----------------------
 
-def evaluate_trade(data, team1_players, team2_players):
+def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments):
     """
-    Evaluates the trade between Team 1 and Team 2 based on selected players.
+    Evaluates the trade between Team 1 and Team 2 based on selected players and injury adjustments.
     """
     week = calculate_week()
     st.markdown(f"<h3 style='text-align: center;'>Current Week: {week}</h3>", unsafe_allow_html=True)
@@ -132,8 +132,11 @@ def evaluate_trade(data, team1_players, team2_players):
     team1_scores = []
     team1_details = []
 
-    for player in team1_players:
+    for idx, player in enumerate(team1_players):
         score = calculate_score(player, week, data)
+        injury_adjustment = team1_injury_adjustments[idx]
+        score += injury_adjustment  # Apply the injury adjustment (-1 or -2)
+        score = max(2.00, score)  # Ensure the score is at least 2.00 after injury adjustment
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
@@ -148,7 +151,8 @@ def evaluate_trade(data, team1_players, team2_players):
             'regular': regular,
             'projection': projection,
             'score': score,
-            'image_path': image_path
+            'image_path': image_path,
+            'injury_adjustment': injury_adjustment
         })
 
     team1_total = sum(team1_scores)
@@ -157,8 +161,11 @@ def evaluate_trade(data, team1_players, team2_players):
     team2_scores = []
     team2_details = []
 
-    for player in team2_players:
+    for idx, player in enumerate(team2_players):
         score = calculate_score(player, week, data)
+        injury_adjustment = team2_injury_adjustments[idx]
+        score += injury_adjustment  # Apply the injury adjustment (-1 or -2)
+        score = max(2.00, score)  # Ensure the score is at least 2.00 after injury adjustment
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
@@ -173,7 +180,8 @@ def evaluate_trade(data, team1_players, team2_players):
             'regular': regular,
             'projection': projection,
             'score': score,
-            'image_path': image_path
+            'image_path': image_path,
+            'injury_adjustment': injury_adjustment
         })
 
     team2_total = sum(team2_scores)
@@ -190,7 +198,8 @@ def evaluate_trade(data, team1_players, team2_players):
                 'regular': '-',
                 'projection': '-',
                 'score': 2.00,
-                'image_path': placeholder_image_path  # Use placeholder image
+                'image_path': placeholder_image_path,  # Use placeholder image
+                'injury_adjustment': 0
             })
         empty_slots_info = f"Team 1 receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
@@ -204,7 +213,8 @@ def evaluate_trade(data, team1_players, team2_players):
                 'regular': '-',
                 'projection': '-',
                 'score': 2.00,
-                'image_path': placeholder_image_path  # Use placeholder image
+                'image_path': placeholder_image_path,  # Use placeholder image
+                'injury_adjustment': 0
             })
         empty_slots_info = f"Team 2 receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
@@ -227,9 +237,14 @@ def evaluate_trade(data, team1_players, team2_players):
                             unsafe_allow_html=True
                         )
                     else:
+                        injury_note = ""
+                        if detail['injury_adjustment'] == -1:
+                            injury_note = " (IL - Until 4 Weeks)"
+                        elif detail['injury_adjustment'] == -2:
+                            injury_note = " (IL - Indefinitely)"
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
-                            f"<strong>{detail['player']}</strong><br>"
+                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
                             f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
@@ -248,9 +263,14 @@ def evaluate_trade(data, team1_players, team2_players):
                             unsafe_allow_html=True
                         )
                     else:
+                        injury_note = ""
+                        if detail['injury_adjustment'] == -1:
+                            injury_note = " (IL - Until 4 Weeks)"
+                        elif detail['injury_adjustment'] == -2:
+                            injury_note = " (IL - Indefinitely)"
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
-                            f"<strong>{detail['player']}</strong><br>"
+                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
                             f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
@@ -263,7 +283,6 @@ def evaluate_trade(data, team1_players, team2_players):
 
     # Calculate Trade Ratio
     trade_ratio = round(min(team1_total / team2_total, team2_total / team1_total), 2)
-
 
     # Center the Trade Ratio
     st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h3>", unsafe_allow_html=True)
@@ -538,9 +557,6 @@ def main():
         return
 
     # ------------------- Player Selection -------------------
-    # Center the heading
-    #st.markdown("<h3 style='text-align: center;'>Select Players for Trade</h3>", unsafe_allow_html=True)
-
     with st.form("trade_form"):
         # Create two columns for Team 1 and Team 2
         col1, col2 = st.columns(2)
@@ -554,11 +570,6 @@ def main():
                 options=data['Player_Name'].tolist(),
                 key="team1_selected"
             )
-            # Display Selected Players for Team 1
-            if team1_selected:
-                st.markdown("<div style='text-align: center;'><strong>Selected Players for Team 1:</strong></div>", unsafe_allow_html=True)
-                for player in team1_selected:
-                    st.markdown(f"<div style='text-align: center;'>- {player}</div>", unsafe_allow_html=True)
 
         with col2:
             # Team 2 Heading
@@ -569,12 +580,66 @@ def main():
                 options=data['Player_Name'].tolist(),
                 key="team2_selected"
             )
-            # Display Selected Players for Team 2
-            if team2_selected:
-                st.markdown("<div style='text-align: center;'><strong>Selected Players for Team 2:</strong></div>", unsafe_allow_html=True)
-                for player in team2_selected:
-                    st.markdown(f"<div style='text-align: center;'>- {player}</div>", unsafe_allow_html=True)
-    
+
+        # Injury Status Selection for both teams side by side
+        if team1_selected or team2_selected:
+            st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
+            col_team1, col_team2 = st.columns(2)
+            
+            # Team 1 Injury Status
+            team1_injury_adjustments = []
+            with col_team1:
+                if team1_selected:
+                    st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
+                    for idx, player in enumerate(team1_selected):
+                        col_player, col_status = st.columns([1, 3])
+                        with col_player:
+                            st.write(player)
+                        with col_status:
+                            injury_status = st.selectbox(
+                                "Injury Status",
+                                ["No Injury", "IL Until 4 Weeks (-1)", "IL Indefinitely (-2)"],
+                                key=f"team1_{player}_injury_status"
+                            )
+                        # Determine injury adjustment
+                        if injury_status == "IL Until 4 Weeks":
+                            team1_injury_adjustments.append(-1)
+                        elif injury_status == "IL Indefinitely":
+                            team1_injury_adjustments.append(-2)
+                        else:
+                            team1_injury_adjustments.append(0)
+                else:
+                    team1_injury_adjustments = []
+
+            # Team 2 Injury Status
+            team2_injury_adjustments = []
+            with col_team2:
+                if team2_selected:
+                    st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
+                    for idx, player in enumerate(team2_selected):
+                        col_player, col_status = st.columns([1, 3])
+                        with col_player:
+                            st.write(player)
+                        with col_status:
+                            injury_status = st.selectbox(
+                                "Injury Status",
+                                ["No Injury", "IL Until 4 Weeks (-1)", "IL Indefinitely (-2)"],
+                                key=f"team2_{player}_injury_status"
+                            )
+                        # Determine injury adjustment
+                        if injury_status == "IL Until 4 Weeks":
+                            team2_injury_adjustments.append(-1)
+                        elif injury_status == "IL Indefinitely":
+                            team2_injury_adjustments.append(-2)
+                        else:
+                            team2_injury_adjustments.append(0)
+                else:
+                    team2_injury_adjustments = []
+
+        else:
+            team1_injury_adjustments = []
+            team2_injury_adjustments = []
+
         # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.4, 1])
         with col_center[1]:
@@ -589,13 +654,10 @@ def main():
             if not team1_selected and not team2_selected:
                 st.warning("Please select players for both teams to evaluate a trade.")
             else:
-                evaluate_trade(data, team1_selected, team2_selected)
+                evaluate_trade(data, team1_selected, team2_selected, team1_injury_adjustments, team2_injury_adjustments)
 
     # ------------------- Player Rankings Section -------------------
     st.markdown("---")
-
-    # Center the heading
-    #st.markdown("<h3 style='text-align: center;'>🏀 Player Rankings</h3>", unsafe_allow_html=True)
 
     # Initialize 'show_rankings' to True if not already set
     if 'show_rankings' not in st.session_state:
