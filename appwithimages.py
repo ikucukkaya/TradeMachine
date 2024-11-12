@@ -5,7 +5,6 @@ import unicodedata
 from datetime import datetime
 import streamlit as st
 from io import BytesIO
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
