@@ -753,7 +753,7 @@ def main():
             team2_injury_adjustments = []
 
         # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.270, 1])
+        col_center = st.columns([1, 0.250, 1])
         with col_center[1]:
             submitted = st.button("📈 Evaluate Trade")
 
