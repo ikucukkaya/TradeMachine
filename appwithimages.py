@@ -332,7 +332,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     st.markdown(approval_message, unsafe_allow_html=True)
 
     # ------------------- Sosyal Medya Paylaşımı -------------------
-    st.markdown("<h4 style='text-align: center;'>Takas Değerlendirmenizi WhatsApp'ta Paylaşın</h4>", unsafe_allow_html=True)
+    #st.markdown("<h4 style='text-align: center;'>Takas Değerlendirmenizi WhatsApp'ta Paylaşın</h4>", unsafe_allow_html=True)
     
     # Paylaşılacak mesaj için Team 1 ve Team 2 oyuncu bilgilerini ekleyin
     team1_details_text = "\n".join(
