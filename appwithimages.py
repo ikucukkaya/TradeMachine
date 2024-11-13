@@ -602,9 +602,9 @@ def main():
                                 key=f"team1_{player}_injury_status"
                             )
                         # Determine injury adjustment
-                        if injury_status == "IL Until 4 Weeks":
+                        if injury_status == "IL Until 4 Weeks (-1)":
                             team1_injury_adjustments.append(-1)
-                        elif injury_status == "IL Indefinitely":
+                        elif injury_status == "IL Indefinitely (-2)":
                             team1_injury_adjustments.append(-2)
                         else:
                             team1_injury_adjustments.append(0)
@@ -627,9 +627,9 @@ def main():
                                 key=f"team2_{player}_injury_status"
                             )
                         # Determine injury adjustment
-                        if injury_status == "IL Until 4 Weeks":
+                        if injury_status == "IL Until 4 Weeks (-1)":
                             team2_injury_adjustments.append(-1)
-                        elif injury_status == "IL Indefinitely":
+                        elif injury_status == "IL Indefinitely (-2)":
                             team2_injury_adjustments.append(-2)
                         else:
                             team2_injury_adjustments.append(0)
