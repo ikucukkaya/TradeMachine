@@ -5,6 +5,8 @@ import unicodedata
 from datetime import datetime
 import streamlit as st
 from io import BytesIO
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid.shared import GridUpdateMode
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -102,7 +104,7 @@ def calculate_week():
     """
     Calculates the current week based on a base date.
     """
-    base_date = datetime(2024, 10, 21)
+    base_date = datetime(2024, 10, 21)  # Assuming the season starts on Oct 21, 2024
     current_date = datetime.now()
     delta = current_date - base_date
     week = max(0, (delta.days // 7) + 1)
@@ -317,7 +319,7 @@ def display_injured_players(data):
         injured_players_df = injured_df[['Player_Name', 'Injury', 'Status']].reset_index(drop=True)
         st.table(injured_players_df)
 
-# ----------------------- Player Rankings Display Function -----------------------
+# ----------------------- Player Rankings Display Functions -----------------------
 
 @st.cache_data
 def load_regular_season_data():
@@ -393,26 +395,105 @@ def load_rest_of_season_data():
         df_rest_of_season = pd.DataFrame()
     return df_rest_of_season
 
-def display_player_rankings(data):
+def display_player_rankings():
     """
-    Calculates and displays the player rankings based on Regular, Projection, and Total_Score.
-    Displays three separate tables side by side with specified decimal places.
+    Displays the Regular Season Rankings and Rest of Season Projections tables.
     """
-    # Calculate week number
-    week = calculate_week()
-    
     # ----------------------- Regular Season Rankings -----------------------
     df_regular_season = load_regular_season_data()
+    df_regular_season_prepared = prepare_dataframe(df_regular_season)
 
     # ----------------------- Rest of Season Projections -----------------------
     df_rest_of_season = load_rest_of_season_data()
+    df_rest_of_season_prepared = prepare_dataframe(df_rest_of_season)
+
+    # ----------------------- Display Tables -----------------------
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+    from st_aggrid.shared import GridUpdateMode
+
+    # Define color mapping functions using JsCode with red-to-green palette
+    color_renderer = JsCode("""
+    function(params) {
+        if (params.value !== null && params.value !== undefined) {
+            const value = parseFloat(params.value);
+            const max = params.colDef.maxValue;
+            const min = params.colDef.minValue;
+            const mid = (max + min) / 2;
+            let red, green, blue;
+            if (value < mid) {
+                // Values less than mid: red to white
+                const ratio = (value - min) / (mid - min);
+                red = 255;
+                green = Math.round(255 * ratio);
+                blue = Math.round(255 * ratio);
+            } else {
+                // Values greater than or equal to mid: white to green
+                const ratio = (value - mid) / (max - mid);
+                red = Math.round(255 * (1 - ratio));
+                green = 255;
+                blue = Math.round(255 * (1 - ratio));
+            }
+            const color = 'rgb(' + red + ',' + green + ',' + blue + ')';
+            return {
+                'backgroundColor': color,
+                'color': 'black'
+            }
+        } else {
+            return {
+                'backgroundColor': 'white',
+                'color': 'black'
+            }
+        }
+    };
+    """)
+
+    # Display Regular Season Rankings
+    if not df_regular_season_prepared.empty:
+        st.markdown("**📊 Regular Season Rankings**")
+        numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+        grid_options = apply_aggrid_styling(df_regular_season_prepared, numerical_cols, color_renderer)
+        AgGrid(
+            df_regular_season_prepared,
+            gridOptions=grid_options,
+            height=400,
+            reload_data=False,
+            update_mode=GridUpdateMode.NO_UPDATE,
+            allow_unsafe_jscode=True
+        )
+    else:
+        st.info("Regular Season Rankings not available.")
+
+    st.markdown("---")  # Separator between tables
+
+    # Display Rest of Season Projections
+    if not df_rest_of_season_prepared.empty:
+        st.markdown("**🔮 Rest of Season Projections**")
+        numerical_cols = ['FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']
+        grid_options = apply_aggrid_styling(df_rest_of_season_prepared, numerical_cols, color_renderer)
+        AgGrid(
+            df_rest_of_season_prepared,
+            gridOptions=grid_options,
+            height=400,
+            reload_data=False,
+            update_mode=GridUpdateMode.NO_UPDATE,
+            allow_unsafe_jscode=True
+        )
+    else:
+        st.info("Rest of Season Projections not available.")
+
+def display_total_scores(data):
+    """
+    Displays the Total Scores table in the Total Scores tab.
+    """
+    # Calculate week number
+    week = calculate_week()
 
     # ----------------------- Total_Score Rankings -----------------------
     data['Total_Score'] = data.apply(
         lambda row: (((20 - week) * row['Projection']) / 20) + ((week * row['Regular']) / 20),
         axis=1
     ).round(2)
-    
+
     df_total = data[['Player_Name', 'Total_Score']].copy()
     df_total_sorted = df_total.sort_values(by='Total_Score', ascending=False).reset_index(drop=True)
     # Remove existing 'Rank' column if present
@@ -422,108 +503,117 @@ def display_player_rankings(data):
     df_total_sorted.reset_index(inplace=True)
     df_total_sorted.rename(columns={'index': 'Rank'}, inplace=True)
     df_total_sorted['Rank'] = df_total_sorted['Rank'] + 1
-    df_total_sorted = df_total_sorted.rename(columns={'Total_Score': 'Score'})
-    # Reorder columns to have 'Rank' first
-    columns_order = ['Rank', 'Player_Name', 'Score']
-    df_total_final = df_total_sorted[columns_order]
+    df_total_final = df_total_sorted.rename(columns={'Total_Score': 'Score'})
     df_total_final['Score'] = df_total_final['Score'].astype(float)
 
-    # ----------------------- Apply Formatting -----------------------
-    # Format decimal places
-    def format_dataframe(df):
-        df = df.copy()
-        # Format 'FG%' and 'FT%' to three decimals
-        if 'FG%' in df.columns:
-            df['FG%'] = df['FG%'].map("{:.3f}".format)
-        if 'FT%' in df.columns:
-            df['FT%'] = df['FT%'].map("{:.3f}".format)
-        # Format other stats to two decimals
-        for col in ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL', 'Score']:
-            if col in df.columns:
-                df[col] = df[col].map("{:.2f}".format)
-        return df
-
-    df_regular_season_formatted = format_dataframe(df_regular_season)
-    df_rest_of_season_formatted = format_dataframe(df_rest_of_season)
-    df_total_final_formatted = format_dataframe(df_total_final)
+    df_total_final_prepared = df_total_final.copy()
 
     # ----------------------- Apply Color Gradients -----------------------
-    def apply_color_gradients(df):
-        df = df.copy()
-        styled_df = df.style
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+    from st_aggrid.shared import GridUpdateMode
 
-        # Define color map
-        cmap = 'RdYlGn'  # Red to Yellow to Green
+    # Define color mapping functions using JsCode with red-to-green palette
+    color_renderer = JsCode("""
+    function(params) {
+        if (params.value !== null && params.value !== undefined) {
+            const value = parseFloat(params.value);
+            const max = params.colDef.maxValue;
+            const min = params.colDef.minValue;
+            const mid = (max + min) / 2;
+            let red, green, blue;
+            if (value < mid) {
+                // Values less than mid: red to white
+                const ratio = (value - min) / (mid - min);
+                red = 255;
+                green = Math.round(255 * ratio);
+                blue = Math.round(255 * ratio);
+            } else {
+                // Values greater than or equal to mid: white to green
+                const ratio = (value - mid) / (max - mid);
+                red = Math.round(255 * (1 - ratio));
+                green = 255;
+                blue = Math.round(255 * (1 - ratio));
+            }
+            const color = 'rgb(' + red + ',' + green + ',' + blue + ')';
+            return {
+                'backgroundColor': color,
+                'color': 'black'
+            }
+        } else {
+            return {
+                'backgroundColor': 'white',
+                'color': 'black'
+            }
+        }
+    };
+    """)
 
-        # Apply gradients
-        if 'FG%' in df.columns:
-            styled_df = styled_df.background_gradient(subset=['FG%'], cmap=cmap)
-        if 'FT%' in df.columns:
-            styled_df = styled_df.background_gradient(subset=['FT%'], cmap=cmap)
-        for col in ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TOTAL', 'Score']:
-            if col in df.columns:
-                styled_df = styled_df.background_gradient(subset=[col], cmap=cmap)
-        if 'TO' in df.columns:
-            # Inverse the color map for turnovers
-            styled_df = styled_df.background_gradient(subset=['TO'], cmap=cmap, 
-                                                      gmap=-df['TO'].astype(float))
-        return styled_df
+    # Display Total Scores
+    st.markdown(f"**🏆 Total Scores (Week {week})**")
+    numerical_cols = ['Score']
+    grid_options = apply_aggrid_styling(df_total_final_prepared, numerical_cols, color_renderer)
+    AgGrid(
+        df_total_final_prepared,
+        gridOptions=grid_options,
+        height=600,
+        reload_data=False,
+        update_mode=GridUpdateMode.NO_UPDATE,
+        allow_unsafe_jscode=True
+    )
 
-    # Apply color gradients
-    styled_regular_season = apply_color_gradients(df_regular_season_formatted)
-    styled_rest_of_season = apply_color_gradients(df_rest_of_season_formatted)
-    styled_total_scores = apply_color_gradients(df_total_final_formatted)
+def prepare_dataframe(df):
+    """
+    Ensures numerical columns are of numeric type and prepares the dataframe for display.
+    """
+    df = df.copy()
+    # Convert 'FG%' and 'FT%' to float
+    for col in ['FG%', 'FT%']:
+        if col in df.columns:
+            df[col] = df[col].astype(float)
+    # Convert other stats to float
+    for col in ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'TOTAL']:
+        if col in df.columns:
+            df[col] = df[col].astype(float)
+    return df
 
-    # ----------------------- Display Tables Side by Side -----------------------
-    # Create three columns with adjusted widths
-    col1, col2, col3 = st.columns([3, 3, 1])
+def apply_aggrid_styling(df, numerical_cols, color_renderer):
+    """
+    Applies styling to the AgGrid table.
+    """
+    def get_aggrid_options(df, numerical_cols):
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_default_column(sortable=True, filter=True)
+        gb.configure_selection(selection_mode="single", use_checkbox=False)
 
-    with col1:
-        if not df_regular_season.empty:
-            st.markdown("**📊 Regular Season Rankings**")
-            st.dataframe(styled_regular_season, use_container_width=True, hide_index=True)
-        else:
-            st.info("Regular Season Rankings not available.")
+        # Set value formatters and column widths
+        for col in df.columns:
+            if col in numerical_cols:
+                if col in ['FG%', 'FT%']:
+                    gb.configure_column(col, type=["numericColumn"], valueFormatter="x.toFixed(3)", width=80)
+                elif col == 'Player_Name':
+                    gb.configure_column(col, width=150)
+                else:
+                    gb.configure_column(col, type=["numericColumn"], valueFormatter="x.toFixed(2)", width=70)
+            else:
+                gb.configure_column(col, width=50)
+        grid_options = gb.build()
+        return grid_options
 
-    with col2:
-        if not df_rest_of_season.empty:
-            st.markdown("**🔮 Rest of Season Projections**")
-            st.dataframe(styled_rest_of_season, use_container_width=True, hide_index=True)
-        else:
-            st.info("Rest of Season Projections not available.")
-
-    with col3:
-        st.markdown(f"**🏆 Total Scores (Week {week})**")
-        st.dataframe(styled_total_scores, use_container_width=True, hide_index=True)
-
-    # ----------------------- Download Rankings -----------------------
-    # Combine all rankings into a single Excel file with separate sheets
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Regular Season Rankings
-        if not df_regular_season.empty:
-            df_regular_season.to_excel(writer, sheet_name='Regular Season Rankings', index=False)
-        
-        # Rest of Season Projections
-        if not df_rest_of_season.empty:
-            df_rest_of_season.to_excel(writer, sheet_name='Rest of Season Projections', index=False)
-        
-        # Total Scores
-        df_total_final.to_excel(writer, sheet_name='Total Scores', index=False)
-    processed_data = output.getvalue()
-    
-    # Get current date for the filename
-    current_date = datetime.now().strftime("%d_%m_%Y")
-    
-    # Center the download button
-    col_center = st.columns([1, 0.5, 1])
-    with col_center[1]:
-        st.download_button(
-            label="📥 Download Player Rankings",
-            data=processed_data,
-            file_name=f"Player_Rankings_{current_date}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    grid_options = get_aggrid_options(df, numerical_cols)
+    for col in numerical_cols:
+        if col in df.columns:
+            col_def = grid_options['columnDefs']
+            for c in col_def:
+                if c['field'] == col:
+                    c['cellStyle'] = color_renderer
+                    # Extract min and max values for the column
+                    try:
+                        c['maxValue'] = df[col].astype(float).max()
+                        c['minValue'] = df[col].astype(float).min()
+                    except ValueError:
+                        c['maxValue'] = 1.0
+                        c['minValue'] = 0.0
+    return grid_options
 
 # ----------------------- Streamlit Main Application -----------------------
 
@@ -574,7 +664,7 @@ def main():
         return
 
     # ------------------- Create Tabs -------------------
-    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Rankings", "Injured Players"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Trade Evaluation", "Player Rankings", "Total Scores", "Injured Players"])
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
@@ -661,7 +751,7 @@ def main():
             team2_injury_adjustments = []
 
         # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.275, 1])
+        col_center = st.columns([1, 0.4, 1])
         with col_center[1]:
             submitted = st.button("📈 Evaluate Trade")
 
@@ -678,10 +768,14 @@ def main():
 
     # ------------------- Player Rankings Tab -------------------
     with tab2:
-        display_player_rankings(data)
+        display_player_rankings()
+
+    # ------------------- Total Scores Tab -------------------
+    with tab3:
+        display_total_scores(data)
 
     # ------------------- Injured Players Tab -------------------
-    with tab3:
+    with tab4:
         # Center the heading
         st.markdown(
             "<h3 style='text-align: center;'>🏥 Injured Players Information</h3>",
