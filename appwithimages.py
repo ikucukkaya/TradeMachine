@@ -7,6 +7,9 @@ import streamlit as st
 from io import BytesIO
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from st_aggrid.shared import GridUpdateMode
+import urllib.parse
+import streamlit as st
+import streamlit.components.v1 as components
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,6 +18,27 @@ image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
 
 # ----------------------- Utility Functions -----------------------
+
+def display_whatsapp_share_button(share_message):
+    # URL kodlaması yaparak paylaşım metnini hazırlayın
+    encoded_message = urllib.parse.quote(share_message)
+
+    # WhatsApp paylaşım linkini oluşturun
+    whatsapp_url = f"https://api.whatsapp.com/send?text={encoded_message}"
+
+    # HTML ile WhatsApp paylaşım butonunu oluşturun
+    button_html = f"""
+    <div style="text-align: center;">
+        <a href="{whatsapp_url}" target="_blank">
+            <button style="margin: 5px; padding: 10px; color: white; background-color: #25D366; border: none; border-radius: 5px;">
+                WhatsApp'ta Paylaş
+            </button>
+        </a>
+    </div>
+    """
+    
+    # Streamlit bileşeni olarak HTML kodunu yerleştirin
+    components.html(button_html, height=80)
 
 def normalize_player_name(player_name):
     """
@@ -40,8 +64,10 @@ def get_player_image_path(player_name):
     Returns the file path of the player's image if it exists,
     otherwise returns the path to the placeholder image.
     """
+    # Normalize the player name to match the image file naming convention
+    normalized_name = normalize_player_name(player_name)
     # Construct the image file name
-    image_file_name = f"{player_name}.jpg"
+    image_file_name = f"{normalized_name}.jpg"
     # Construct the full image path
     image_path = os.path.join(image_dir, image_file_name)
     # Check if the image file exists
@@ -303,8 +329,32 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             <h3 style='color: red;'>Trade Not Approved!</h3>
         </div>
         """
-
     st.markdown(approval_message, unsafe_allow_html=True)
+
+    # ------------------- Sosyal Medya Paylaşımı -------------------
+    st.markdown("<h4 style='text-align: center;'>Takas Değerlendirmenizi WhatsApp'ta Paylaşın</h4>", unsafe_allow_html=True)
+    
+    # Paylaşılacak mesaj için Team 1 ve Team 2 oyuncu bilgilerini ekleyin
+    team1_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team1_details]
+    )
+    team2_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team2_details]
+    )
+
+    # Genel paylaşım mesajını oluşturun
+    share_message = (
+        f"Takas Değerlendirmesi:\n\n"
+        f"Team 1 Total Score: {team1_total:.2f}\n"
+        f"Team 2 Total Score: {team2_total:.2f}\n"
+        f"Trade Ratio: {trade_ratio:.2f}\n\n"
+        f"--- Team 1 Oyuncu Bilgileri ---\n{team1_details_text}\n\n"
+        f"--- Team 2 Oyuncu Bilgileri ---\n{team2_details_text}\n"
+    )
+
+    # WhatsApp paylaşım butonunu gösterin
+    display_whatsapp_share_button(share_message)
+    
 
 # ----------------------- Injured Players Display Function -----------------------
 
