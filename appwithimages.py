@@ -557,93 +557,91 @@ def main():
         return
 
     # ------------------- Player Selection -------------------
-    with st.form("trade_form"):
-        # Create two columns for Team 1 and Team 2
-        col1, col2 = st.columns(2)
+    # Create two columns for Team 1 and Team 2
+    col1, col2 = st.columns(2)
 
-        with col1:
-            # Team 1 Heading
-            st.markdown("<h3 style='text-align: center;'>Team 1: Select Players</h3>", unsafe_allow_html=True)
-            # Team 1 Selection List
-            team1_selected = st.multiselect(
-                "Select Players for Team 1",
-                options=data['Player_Name'].tolist(),
-                key="team1_selected"
-            )
+    with col1:
+        # Team 1 Heading
+        st.markdown("<h3 style='text-align: center;'>Team 1: Select Players</h3>", unsafe_allow_html=True)
+        # Team 1 Selection List
+        team1_selected = st.multiselect(
+            "Select Players for Team 1",
+            options=data['Player_Name'].tolist(),
+            key="team1_selected"
+        )
 
-        with col2:
-            # Team 2 Heading
-            st.markdown("<h3 style='text-align: center;'>Team 2: Select Players</h3>", unsafe_allow_html=True)
-            # Team 2 Selection List
-            team2_selected = st.multiselect(
-                "Select Players for Team 2",
-                options=data['Player_Name'].tolist(),
-                key="team2_selected"
-            )
+    with col2:
+        # Team 2 Heading
+        st.markdown("<h3 style='text-align: center;'>Team 2: Select Players</h3>", unsafe_allow_html=True)
+        # Team 2 Selection List
+        team2_selected = st.multiselect(
+            "Select Players for Team 2",
+            options=data['Player_Name'].tolist(),
+            key="team2_selected"
+        )
 
-        # Injury Status Selection for both teams side by side
-        if team1_selected or team2_selected:
-            st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
-            col_team1, col_team2 = st.columns(2)
-            
-            # Team 1 Injury Status
-            team1_injury_adjustments = []
-            with col_team1:
-                if team1_selected:
-                    st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
-                    for idx, player in enumerate(team1_selected):
-                        col_player, col_status = st.columns([1, 3])
-                        with col_player:
-                            st.write(player)
-                        with col_status:
-                            injury_status = st.selectbox(
-                                "Injury Status",
-                                ["No Injury", "IL Until 4 Weeks (-1)", "IL Indefinitely (-2)"],
-                                key=f"team1_{player}_injury_status"
-                            )
-                        # Determine injury adjustment
-                        if injury_status == "IL Until 4 Weeks (-1)":
-                            team1_injury_adjustments.append(-1)
-                        elif injury_status == "IL Indefinitely (-2)":
-                            team1_injury_adjustments.append(-2)
-                        else:
-                            team1_injury_adjustments.append(0)
-                else:
-                    team1_injury_adjustments = []
+    # Injury Status Selection for both teams side by side
+    if team1_selected or team2_selected:
+        st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
+        col_team1, col_team2 = st.columns(2)
+        
+        # Injury options and adjustments
+        injury_options = {
+            "No Injury": 0,
+            "IL Until 4 Weeks (-1)": -1,
+            "IL Indefinitely (-2)": -2
+        }
+        
+        # Team 1 Injury Status
+        team1_injury_adjustments = []
+        with col_team1:
+            if team1_selected:
+                st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
+                for idx, player in enumerate(team1_selected):
+                    col_player, col_status = st.columns([1, 3])
+                    with col_player:
+                        st.write(player)
+                    with col_status:
+                        injury_status = st.selectbox(
+                            "Injury Status",
+                            options=list(injury_options.keys()),
+                            key=f"team1_{player}_injury_status"
+                        )
+                    # Get the adjustment from the dictionary
+                    injury_adjustment = injury_options[injury_status]
+                    team1_injury_adjustments.append(injury_adjustment)
+            else:
+                team1_injury_adjustments = []
 
-            # Team 2 Injury Status
-            team2_injury_adjustments = []
-            with col_team2:
-                if team2_selected:
-                    st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
-                    for idx, player in enumerate(team2_selected):
-                        col_player, col_status = st.columns([1, 3])
-                        with col_player:
-                            st.write(player)
-                        with col_status:
-                            injury_status = st.selectbox(
-                                "Injury Status",
-                                ["No Injury", "IL Until 4 Weeks (-1)", "IL Indefinitely (-2)"],
-                                key=f"team2_{player}_injury_status"
-                            )
-                        # Determine injury adjustment
-                        if injury_status == "IL Until 4 Weeks (-1)":
-                            team2_injury_adjustments.append(-1)
-                        elif injury_status == "IL Indefinitely (-2)":
-                            team2_injury_adjustments.append(-2)
-                        else:
-                            team2_injury_adjustments.append(0)
-                else:
-                    team2_injury_adjustments = []
+        # Team 2 Injury Status
+        team2_injury_adjustments = []
+        with col_team2:
+            if team2_selected:
+                st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
+                for idx, player in enumerate(team2_selected):
+                    col_player, col_status = st.columns([1, 3])
+                    with col_player:
+                        st.write(player)
+                    with col_status:
+                        injury_status = st.selectbox(
+                            "Injury Status",
+                            options=list(injury_options.keys()),
+                            key=f"team2_{player}_injury_status"
+                        )
+                    # Get the adjustment from the dictionary
+                    injury_adjustment = injury_options[injury_status]
+                    team2_injury_adjustments.append(injury_adjustment)
+            else:
+                team2_injury_adjustments = []
 
-        else:
-            team1_injury_adjustments = []
-            team2_injury_adjustments = []
+    else:
+        team1_injury_adjustments = []
+        team2_injury_adjustments = []
 
-        # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.4, 1])
-        with col_center[1]:
-            submitted = st.form_submit_button("📈 Evaluate Trade")
+    # Center the Evaluate Trade button using columns
+    col_center = st.columns([1, 0.4, 1])
+    with col_center[1]:
+        submitted = st.button("📈 Evaluate Trade")
 
     if submitted:
         # Check for duplicates
