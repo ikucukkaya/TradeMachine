@@ -49,6 +49,7 @@ def get_player_image_path(player_name):
         # Return the placeholder image path
         return placeholder_image_path
 
+@st.cache_data
 def read_data(scores_path, injury_path):
     """
     Reads and merges the scores and injury data from Excel files.
@@ -318,15 +319,11 @@ def display_injured_players(data):
 
 # ----------------------- Player Rankings Display Function -----------------------
 
-def display_player_rankings(data):
+@st.cache_data
+def load_regular_season_data():
     """
-    Calculates and displays the player rankings based on Regular, Projection, and Total_Score.
-    Displays three separate tables side by side with specified decimal places.
+    Loads and processes regular season data.
     """
-    # Calculate week number
-    week = calculate_week()
-    
-    # ----------------------- Regular Season Rankings -----------------------
     regular_season_path = os.path.join(data_dir, "2024-25_NBA_Regular_Season_Updated_daily.xlsx")
     try:
         df_regular_season = pd.read_excel(regular_season_path)
@@ -357,8 +354,13 @@ def display_player_rankings(data):
     except Exception as e:
         st.error(f"Failed to load Regular Season Rankings: {e}")
         df_regular_season = pd.DataFrame()
+    return df_regular_season
 
-    # ----------------------- Rest of Season Projections -----------------------
+@st.cache_data
+def load_rest_of_season_data():
+    """
+    Loads and processes rest of season projections data.
+    """
     rest_of_season_path = os.path.join(data_dir, "2024-25_Rest_of_Season_Rankings_Projections_updated_daily.xlsx")
     try:
         df_rest_of_season = pd.read_excel(rest_of_season_path)
@@ -389,6 +391,21 @@ def display_player_rankings(data):
     except Exception as e:
         st.error(f"Failed to load Rest of Season Projections: {e}")
         df_rest_of_season = pd.DataFrame()
+    return df_rest_of_season
+
+def display_player_rankings(data):
+    """
+    Calculates and displays the player rankings based on Regular, Projection, and Total_Score.
+    Displays three separate tables side by side with specified decimal places.
+    """
+    # Calculate week number
+    week = calculate_week()
+    
+    # ----------------------- Regular Season Rankings -----------------------
+    df_regular_season = load_regular_season_data()
+
+    # ----------------------- Rest of Season Projections -----------------------
+    df_rest_of_season = load_rest_of_season_data()
 
     # ----------------------- Total_Score Rankings -----------------------
     data['Total_Score'] = data.apply(
@@ -556,154 +573,120 @@ def main():
         st.info("No data available. Please ensure the data files are in place.")
         return
 
-    # ------------------- Player Selection -------------------
-    # Create two columns for Team 1 and Team 2
-    col1, col2 = st.columns(2)
+    # ------------------- Create Tabs -------------------
+    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Rankings", "Injured Players"])
 
-    with col1:
-        # Team 1 Heading
-        st.markdown("<h3 style='text-align: center;'>Team 1: Select Players</h3>", unsafe_allow_html=True)
-        # Team 1 Selection List
-        team1_selected = st.multiselect(
-            "Select Players for Team 1",
-            options=data['Player_Name'].tolist(),
-            key="team1_selected"
-        )
+    # ------------------- Trade Evaluation Tab -------------------
+    with tab1:
+        # ------------------- Player Selection -------------------
+        # Create two columns for Team 1 and Team 2
+        col1, col2 = st.columns(2)
 
-    with col2:
-        # Team 2 Heading
-        st.markdown("<h3 style='text-align: center;'>Team 2: Select Players</h3>", unsafe_allow_html=True)
-        # Team 2 Selection List
-        team2_selected = st.multiselect(
-            "Select Players for Team 2",
-            options=data['Player_Name'].tolist(),
-            key="team2_selected"
-        )
+        with col1:
+            # Team 1 Heading
+            st.markdown("<h3 style='text-align: center;'>Team 1: Select Players</h3>", unsafe_allow_html=True)
+            # Team 1 Selection List
+            team1_selected = st.multiselect(
+                "Select Players for Team 1",
+                options=data['Player_Name'].tolist(),
+                key="team1_selected"
+            )
 
-    # Injury Status Selection for both teams side by side
-    if team1_selected or team2_selected:
-        st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
-        col_team1, col_team2 = st.columns(2)
-        
-        # Injury options and adjustments
-        injury_options = {
-            "No Injury": 0,
-            "IL Until 4 Weeks (-1)": -1,
-            "IL Indefinitely (-2)": -2
-        }
-        
-        # Team 1 Injury Status
-        team1_injury_adjustments = []
-        with col_team1:
-            if team1_selected:
-                st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
-                for idx, player in enumerate(team1_selected):
-                    col_player, col_status = st.columns([1, 3])
-                    with col_player:
-                        st.write(player)
-                    with col_status:
-                        injury_status = st.selectbox(
-                            "Injury Status",
-                            options=list(injury_options.keys()),
-                            key=f"team1_{player}_injury_status"
-                        )
-                    # Get the adjustment from the dictionary
-                    injury_adjustment = injury_options[injury_status]
-                    team1_injury_adjustments.append(injury_adjustment)
-            else:
-                team1_injury_adjustments = []
+        with col2:
+            # Team 2 Heading
+            st.markdown("<h3 style='text-align: center;'>Team 2: Select Players</h3>", unsafe_allow_html=True)
+            # Team 2 Selection List
+            team2_selected = st.multiselect(
+                "Select Players for Team 2",
+                options=data['Player_Name'].tolist(),
+                key="team2_selected"
+            )
 
-        # Team 2 Injury Status
-        team2_injury_adjustments = []
-        with col_team2:
-            if team2_selected:
-                st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
-                for idx, player in enumerate(team2_selected):
-                    col_player, col_status = st.columns([1, 3])
-                    with col_player:
-                        st.write(player)
-                    with col_status:
-                        injury_status = st.selectbox(
-                            "Injury Status",
-                            options=list(injury_options.keys()),
-                            key=f"team2_{player}_injury_status"
-                        )
-                    # Get the adjustment from the dictionary
-                    injury_adjustment = injury_options[injury_status]
-                    team2_injury_adjustments.append(injury_adjustment)
-            else:
-                team2_injury_adjustments = []
+        # Injury Status Selection for both teams side by side
+        if team1_selected or team2_selected:
+            st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
+            col_team1, col_team2 = st.columns(2)
+            
+            # Injury options and adjustments
+            injury_options = {
+                "No Injury": 0,
+                "IL Until 4 Weeks (-1)": -1,
+                "IL Indefinitely (-2)": -2
+            }
+            
+            # Team 1 Injury Status
+            team1_injury_adjustments = []
+            with col_team1:
+                if team1_selected:
+                    st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
+                    for idx, player in enumerate(team1_selected):
+                        col_player, col_status = st.columns([1, 3])
+                        with col_player:
+                            st.write(player)
+                        with col_status:
+                            injury_status = st.selectbox(
+                                "Injury Status",
+                                options=list(injury_options.keys()),
+                                key=f"team1_{player}_injury_status"
+                            )
+                        # Get the adjustment from the dictionary
+                        injury_adjustment = injury_options[injury_status]
+                        team1_injury_adjustments.append(injury_adjustment)
+                else:
+                    team1_injury_adjustments = []
 
-    else:
-        team1_injury_adjustments = []
-        team2_injury_adjustments = []
+            # Team 2 Injury Status
+            team2_injury_adjustments = []
+            with col_team2:
+                if team2_selected:
+                    st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
+                    for idx, player in enumerate(team2_selected):
+                        col_player, col_status = st.columns([1, 3])
+                        with col_player:
+                            st.write(player)
+                        with col_status:
+                            injury_status = st.selectbox(
+                                "Injury Status",
+                                options=list(injury_options.keys()),
+                                key=f"team2_{player}_injury_status"
+                            )
+                        # Get the adjustment from the dictionary
+                        injury_adjustment = injury_options[injury_status]
+                        team2_injury_adjustments.append(injury_adjustment)
+                else:
+                    team2_injury_adjustments = []
 
-    # Center the Evaluate Trade button using columns
-    col_center = st.columns([1, 0.4, 1])
-    with col_center[1]:
-        submitted = st.button("📈 Evaluate Trade")
-
-    if submitted:
-        # Check for duplicates
-        duplicate_players = set(team1_selected) & set(team2_selected)
-        if duplicate_players:
-            st.error(f"Error: The following player(s) are selected for both teams: {', '.join(duplicate_players)}. Please select different players for each team.")
         else:
-            if not team1_selected and not team2_selected:
-                st.warning("Please select players for both teams to evaluate a trade.")
+            team1_injury_adjustments = []
+            team2_injury_adjustments = []
+
+        # Center the Evaluate Trade button using columns
+        col_center = st.columns([1, 0.4, 1])
+        with col_center[1]:
+            submitted = st.button("📈 Evaluate Trade")
+
+        if submitted:
+            # Check for duplicates
+            duplicate_players = set(team1_selected) & set(team2_selected)
+            if duplicate_players:
+                st.error(f"Error: The following player(s) are selected for both teams: {', '.join(duplicate_players)}. Please select different players for each team.")
             else:
-                evaluate_trade(data, team1_selected, team2_selected, team1_injury_adjustments, team2_injury_adjustments)
+                if not team1_selected and not team2_selected:
+                    st.warning("Please select players for both teams to evaluate a trade.")
+                else:
+                    evaluate_trade(data, team1_selected, team2_selected, team1_injury_adjustments, team2_injury_adjustments)
 
-    # ------------------- Player Rankings Section -------------------
-    st.markdown("---")
-
-    # Initialize 'show_rankings' to True if not already set
-    if 'show_rankings' not in st.session_state:
-        st.session_state['show_rankings'] = True
-
-    # Define the callback function for rankings
-    def toggle_show_rankings():
-        st.session_state['show_rankings'] = not st.session_state['show_rankings']
-
-    # Determine the button label based on the current state
-    button_label_rankings = "Hide Player Rankings" if st.session_state['show_rankings'] else "Show Player Rankings"
-
-    # Center the 'Show/Hide Player Rankings' button
-    col_center = st.columns([1, 0.4, 1])
-    with col_center[1]:
-        st.button(button_label_rankings, on_click=toggle_show_rankings, key="rankings_button")
-
-    # Display the player rankings based on the state
-    if st.session_state['show_rankings']:
+    # ------------------- Player Rankings Tab -------------------
+    with tab2:
         display_player_rankings(data)
 
-    # ------------------- Injured Players Section -------------------
-    st.markdown("---")
-
-    # Center the heading
-    st.markdown(
-        "<h3 style='text-align: center;'>🏥 Injured Players Information</h3>",
-        unsafe_allow_html=True
-    )
-
-    # Initialize 'show_injured' to False if not already set
-    if 'show_injured' not in st.session_state:
-        st.session_state['show_injured'] = False
-
-    # Define the callback function for injured players
-    def toggle_show_injured():
-        st.session_state['show_injured'] = not st.session_state['show_injured']
-
-    # Determine the button label based on the current state
-    button_label_injured = "Hide Injured Players" if st.session_state['show_injured'] else "Show Injured Players"
-
-    # Center the 'Show/Hide Injured Players' button using columns
-    col_center = st.columns([1, 0.4, 1])
-    with col_center[1]:
-        st.button(button_label_injured, on_click=toggle_show_injured, key="injured_button")
-
-    # Display the injured players table based on the state
-    if st.session_state['show_injured']:
+    # ------------------- Injured Players Tab -------------------
+    with tab3:
+        # Center the heading
+        st.markdown(
+            "<h3 style='text-align: center;'>🏥 Injured Players Information</h3>",
+            unsafe_allow_html=True
+        )
         display_injured_players(data)
 
 if __name__ == "__main__":
