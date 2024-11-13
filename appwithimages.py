@@ -135,13 +135,36 @@ def display_whatsapp_share_button(share_message):
 
     # HTML ile WhatsApp paylaşım butonunu oluşturun
     button_html = f"""
-    <div style="text-align: center;">
-        <a href="{whatsapp_url}" target="_blank">
-            <button style="margin: 5px; padding: 10px; color: white; background-color: #25D366; border: none; border-radius: 5px;">
+        <style>
+            .whatsapp-button-container {{
+                text-align: center;
+                margin-top: 30px; /* Üst boşluk */
+            }}
+            .whatsapp-button {{
+                margin-right: 25px; /* Butonu hafifçe sağa kaydırır */
+                padding: 12px 20px;
+                color: white;
+                background-color: #25D366;
+                border: 2px solid #1DA1F2;
+                border-radius: 30px;
+                font-size: 18px;
+                font-weight: bold;
+                font-family: Arial, sans-serif;
+                transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+                cursor: pointer;
+                text-decoration: none;
+            }}
+            .whatsapp-button:hover {{
+                background-color: #1DA1F2;
+                transform: scale(1.05);
+                box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            }}
+        </style>
+        <div class="whatsapp-button-container">
+            <a href="{whatsapp_url}" target="_blank" class="whatsapp-button">
                 NBA Fantasy'de Paylaş
-            </button>
-        </a>
-    </div>
+            </a>
+        </div>
     """
     
     # Streamlit bileşeni olarak HTML kodunu yerleştirin
@@ -327,7 +350,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     st.markdown(approval_message, unsafe_allow_html=True)
 
     # ------------------- WhatsApp Paylaşımı -------------------
-    #st.markdown("<h4 style='text-align: center;'>Takas Değerlendirmenizi WhatsApp'ta Paylaşın</h4>", unsafe_allow_html=True)
+    #st.markdown("<h4 style='text-align: center;'>WhatsApp'ta Paylaş</h4>", unsafe_allow_html=True)
     
     # Paylaşılacak mesaj için Team 1 ve Team 2 oyuncu bilgilerini ekleyin
     team1_details_text = "\n".join(
@@ -796,7 +819,7 @@ def main():
             team2_injury_adjustments = []
 
         # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.4, 1])
+        col_center = st.columns([1, 0.275, 1])
         with col_center[1]:
             submitted = st.button("📈 Evaluate Trade")
 
