@@ -141,7 +141,7 @@ def display_whatsapp_share_button(share_message):
                 margin-top: 30px; /* Üst boşluk */
             }}
             .whatsapp-button {{
-                margin-right: 25px; /* Butonu hafifçe sağa kaydırır */
+                margin-right: 32px; /* Butonu hafifçe sağa kaydırır */
                 padding: 12px 20px;
                 color: white;
                 background-color: #25D366;
