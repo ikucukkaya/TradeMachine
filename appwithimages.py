@@ -11,6 +11,7 @@ import urllib.parse
 import streamlit.components.v1 as components
 import glob
 from rapidfuzz import process, fuzz
+import matplotlib.pyplot as plt
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +19,7 @@ data_dir = os.path.join(current_dir, "data")
 image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
 yahoo_dir = os.path.join(current_dir, "yahoo")  # Yahoo klasörü
+player_scores_dir = '/Users/ibrahimkucukkaya/Desktop/Streamlit/TotalScore'  # Yeni eklenen yol
 
 # ----------------------- Utility Functions -----------------------
 
@@ -814,7 +816,7 @@ def main():
         return
 
     # ------------------- Create Tabs -------------------
-    tab1, tab2, tab3, tab4 = st.tabs(["Trade Evaluation", "Player Rankings", "Total Scores", "Injured Players"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Trade Evaluation", "Player Rankings", "Total Scores", "Injured Players", "Player Scores Analysis"])
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
@@ -954,6 +956,152 @@ def main():
             unsafe_allow_html=True
         )
         display_injured_players(data)
+
+    # ------------------- Player Scores Analysis Tab -------------------
+    with tab5:
+        st.markdown("<h3 style='text-align: center;'>📈 Player Scores Analysis</h3>", unsafe_allow_html=True)
+
+        # Load Player Scores Data
+        try:
+            player_scores = load_player_scores(player_scores_dir)
+            st.success("Player scores data loaded successfully.")
+        except ValueError as ve:
+            st.error(ve)
+            return
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            return
+
+        if player_scores.empty:
+            st.info("No player scores data available.")
+            return
+
+        # Get list of unique players
+        players = sorted(player_scores['Player_Name'].unique())
+
+        # Player selection
+        selected_player = st.selectbox("Select a Player", options=players)
+
+        if selected_player:
+            player_data = player_scores[player_scores['Player_Name'] == selected_player].sort_values('Date')
+
+            if player_data.empty:
+                st.warning(f"No data available for {selected_player}.")
+            else:
+                # Plotting
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(player_data['Date'], player_data['Regular'], label='Regular Score', marker='o', color='blue')
+                ax.plot(player_data['Date'], player_data['Projection'], label='Projection Score', marker='o', color='orange')
+
+                ax.set_xlabel('Date')
+                ax.set_ylabel('Score')
+                ax.set_title(f'{selected_player} - Regular and Projection Scores Over Time')
+                ax.legend()
+                ax.grid(True)
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                st.pyplot(fig)
+
+# ----------------------- Player Scores Analysis Functions -----------------------
+
+@st.cache_data
+def load_player_scores(directory_path):
+    """
+    Loads and processes player scores from Excel files in the specified directory.
+    """
+    all_data = []
+    date_pattern = r'Player_Scores_(\d{2}_\d{2}_\d{4})\.xlsx'
+    
+    # Find all Excel files matching the pattern
+    file_path = os.path.join(directory_path, 'Player_Scores_*.xlsx')
+    
+    for file in glob.glob(file_path):
+        try:
+            filename = os.path.basename(file)
+            match = re.search(date_pattern, filename)
+            if match:
+                date_str = match.group(1)  # '02_11_2024'
+                date = pd.to_datetime(date_str, format='%d_%m_%Y', errors='coerce')
+                if pd.isna(date):
+                    print(f"Invalid date format: {filename}")
+                    continue
+            else:
+                print(f"No date information found: {filename}")
+                continue
+            
+            # Read Excel file
+            df = pd.read_excel(file, engine='openpyxl')
+            
+            # Check for required columns
+            required_columns = ['Player_Name', 'Regular', 'Projection']
+            if not set(required_columns).issubset(df.columns):
+                print(f"Missing required columns: {filename}")
+                continue
+            
+            # Select only required columns and add date
+            df = df[required_columns].copy()
+            df['Date'] = date
+            all_data.append(df)
+            
+        except Exception as e:
+            print(f"Error reading {filename}: {e}")
+    
+    if not all_data:
+        raise ValueError("No Excel files could be loaded. Please check the file path and formats.")
+    
+    # Combine all data
+    combined_df = pd.concat(all_data, ignore_index=True)
+    
+    # Clean data
+    combined_df = combined_df.dropna(subset=['Player_Name', 'Regular', 'Projection', 'Date'])
+    combined_df['Regular'] = pd.to_numeric(combined_df['Regular'], errors='coerce')
+    combined_df['Projection'] = pd.to_numeric(combined_df['Projection'], errors='coerce')
+    combined_df = combined_df.dropna(subset=['Regular', 'Projection'])
+    
+    return combined_df
+
+# ----------------------- Helper Functions -----------------------
+
+def apply_aggrid_styling(df, numerical_cols, color_renderer):
+    """
+    Applies styling to the AgGrid table.
+    """
+    def get_aggrid_options(df, numerical_cols):
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_default_column(sortable=True, filter=True)
+        gb.configure_selection(selection_mode="single", use_checkbox=False)
+
+        # Set value formatters and column widths
+        for col in df.columns:
+            if col in numerical_cols:
+                if col in ['FG%', 'FT%']:
+                    gb.configure_column(col, type=["numericColumn"], valueFormatter="x.toFixed(3)", width=80)
+                elif col == 'Player_Name':
+                    gb.configure_column(col, width=150)
+                else:
+                    gb.configure_column(col, type=["numericColumn"], valueFormatter="x.toFixed(2)", width=70)
+            else:
+                gb.configure_column(col, width=50)
+        grid_options = gb.build()
+        return grid_options
+
+    grid_options = get_aggrid_options(df, numerical_cols)
+    for col in numerical_cols:
+        if col in df.columns:
+            col_def = grid_options['columnDefs']
+            for c in col_def:
+                if c['field'] == col:
+                    c['cellStyle'] = color_renderer
+                    # Extract min and max values for the column
+                    try:
+                        c['maxValue'] = df[col].astype(float).max()
+                        c['minValue'] = df[col].astype(float).min()
+                    except ValueError:
+                        c['maxValue'] = 1.0
+                        c['minValue'] = 0.0
+    return grid_options
+
+# ----------------------- Run the Application -----------------------
 
 if __name__ == "__main__":
     main()
