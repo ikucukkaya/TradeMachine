@@ -19,7 +19,7 @@ data_dir = os.path.join(current_dir, "data")
 image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
 yahoo_dir = os.path.join(current_dir, "yahoo")  # Yahoo klasörü
-player_scores_dir = '/Users/ibrahimkucukkaya/Desktop/Streamlit/TotalScore'  # Yeni eklenen yol
+player_scores_dir = os.path.join(current_dir, "TotalScore")  # Yeni eklenen yol
 
 # ----------------------- Utility Functions -----------------------
 
