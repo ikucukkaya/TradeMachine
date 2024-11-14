@@ -7,32 +7,29 @@ import streamlit as st
 from io import BytesIO
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from st_aggrid.shared import GridUpdateMode
+import urllib.parse
+import streamlit.components.v1 as components
+import glob
+from rapidfuzz import process, fuzz
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_dir, "data")
 image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
+yahoo_dir = os.path.join(current_dir, "yahoo")  # Yahoo klasörü
 
 # ----------------------- Utility Functions -----------------------
 
 def normalize_player_name(player_name):
     """
-    Normalizes player names by converting to lowercase, removing special characters,
+    Normalize player names by converting to lowercase, removing special characters,
     and trimming whitespace.
     """
-    # Convert to lowercase
     name = player_name.lower()
-    
-    # Unicode normalization
     name = unicodedata.normalize('NFKD', name)
-    
-    # Keep only letters and spaces
     name = re.sub(r'[^a-z\s]', '', name)
-    
-    # Replace multiple spaces with a single space and strip
     name = re.sub(r'\s+', ' ', name).strip()
-    
     return name
 
 def get_player_image_path(player_name):
@@ -40,15 +37,11 @@ def get_player_image_path(player_name):
     Returns the file path of the player's image if it exists,
     otherwise returns the path to the placeholder image.
     """
-    # Construct the image file name
     image_file_name = f"{player_name}.jpg"
-    # Construct the full image path
     image_path = os.path.join(image_dir, image_file_name)
-    # Check if the image file exists
     if os.path.exists(image_path):
         return image_path
     else:
-        # Return the placeholder image path
         return placeholder_image_path
 
 @st.cache_data
@@ -122,9 +115,86 @@ def calculate_score(player_name, week, data):
     score = max(2, score)  # Ensure the total score is at least 2
     return score
 
+# ----------------------- WhatsApp Share Button Function -----------------------
+
+def display_whatsapp_share_button(share_message):
+    # URL encoding the share message
+    encoded_message = urllib.parse.quote(share_message)
+
+    # Create WhatsApp share link
+    whatsapp_url = f"https://api.whatsapp.com/send?text={encoded_message}"
+
+    # HTML for WhatsApp share button
+    button_html = f"""
+        <style>
+            .whatsapp-button-container {{
+                text-align: center;
+                margin-top: 30px; /* Top margin */
+            }}
+            .whatsapp-button {{
+                margin-right: 32px; /* Slight right margin */
+                padding: 12px 20px;
+                color: white;
+                background-color: #25D366;
+                border: 2px solid #1DA1F2;
+                border-radius: 30px;
+                font-size: 18px;
+                font-weight: bold;
+                font-family: Arial, sans-serif;
+                transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+                cursor: pointer;
+                text-decoration: none;
+            }}
+            .whatsapp-button:hover {{
+                background-color: #1DA1F2;
+                transform: scale(1.05);
+                box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            }}
+        </style>
+        <div class="whatsapp-button-container">
+            <a href="{whatsapp_url}" target="_blank" class="whatsapp-button">
+                NBA Fantasy'de Paylaş
+            </a>
+        </div>
+    """
+    
+    # Embed the HTML in Streamlit
+    components.html(button_html, height=80)
+
+# ----------------------- Fuzzy Matching Function -----------------------
+
+def map_yahoo_to_db_players(yahoo_roster_df, db_player_names, threshold=80):
+    """
+    Maps Yahoo roster player names to database player names using fuzzy matching.
+
+    Parameters:
+    - yahoo_roster_df: DataFrame containing Yahoo roster with 'Player_Name_Normalized'.
+    - db_player_names: List of normalized database player names.
+    - threshold: Minimum similarity score to consider a match.
+
+    Returns:
+    - A dictionary mapping Yahoo player names to DB player names.
+    - A list of Yahoo player names that could not be matched.
+    """
+    mapping = {}
+    unmatched = []
+
+    for yahoo_player in yahoo_roster_df['Player_Name_Normalized']:
+        match, score, _ = process.extractOne(
+            yahoo_player,
+            db_player_names,
+            scorer=fuzz.WRatio
+        )
+        if score >= threshold:
+            mapping[yahoo_player] = match
+        else:
+            unmatched.append(yahoo_player)
+
+    return mapping, unmatched
+
 # ----------------------- Trade Evaluation Function -----------------------
 
-def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments):
+def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name):
     """
     Evaluates the trade between Team 1 and Team 2 based on selected players and injury adjustments.
     """
@@ -204,7 +274,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 'image_path': placeholder_image_path,  # Use placeholder image
                 'injury_adjustment': 0
             })
-        empty_slots_info = f"Team 1 receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
+        empty_slots_info = f"{team1_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
     elif len(team2_players) < len(team1_players):
         empty_slots = len(team1_players) - len(team2_players)
@@ -219,14 +289,14 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 'image_path': placeholder_image_path,  # Use placeholder image
                 'injury_adjustment': 0
             })
-        empty_slots_info = f"Team 2 receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
+        empty_slots_info = f"{team2_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
 
     # Display Trade Evaluation side by side with adjusted widths
     col1, col2 = st.columns([3, 2])  # Adjusted ratios for better layout
 
     with col1:
-        st.markdown(f"<h3 style='text-align: center;'>Team 1 Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>{team1_name} Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
         for detail in team1_details:
             with st.container():
                 # Adjust column ratios if needed
@@ -253,7 +323,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                             unsafe_allow_html=True
                         )
     with col2:
-        st.markdown(f"<h3 style='text-align: center;'>Team 2 Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>{team2_name} Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
         for detail in team2_details:
             with st.container():
                 img_col, text_col = st.columns([1, 4])  # Photo column narrower
@@ -291,20 +361,39 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h3>", unsafe_allow_html=True)
 
     # Determine Trade Approval
+    trade_status_text = "TRADE STATUS UNDETERMINED"  # Default value
     if trade_ratio >= 0.80:
-        approval_message = f"""
-        <div style='text-align: center; color: white;'>
-            <h3 style='color: green;'>Trade Approved!</h3>
-        </div>
-        """
+        approval_message = "<h3 style='color: green; text-align: center;'>TRADE APPROVED</h3>"
+        trade_status_text = "TRADE APPROVED"
     else:
-        approval_message = f"""
-        <div style='text-align: center; color: white;'>
-            <h3 style='color: red;'>Trade Not Approved!</h3>
-        </div>
-        """
-
+        approval_message = "<h3 style='color: red; text-align: center;'>TRADE NOT APPROVED</h3>"
+        trade_status_text = "TRADE NOT APPROVED"
+    
     st.markdown(approval_message, unsafe_allow_html=True)
+
+    # ------------------- WhatsApp Share -------------------
+    
+    # Prepare player details for sharing
+    team1_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team1_details]
+    )
+    team2_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team2_details]
+    )
+
+    # Create share message
+    share_message = (
+        f"Takas Değerlendirmesi:\n\n"
+        f"{team1_name} Total Score: {team1_total:.2f}\n"
+        f"{team2_name} Total Score: {team2_total:.2f}\n"
+        f"Trade Ratio: {trade_ratio:.2f}\n"
+        f"{trade_status_text}\n\n"
+        f"--- {team1_name} Oyuncu Bilgileri ---\n{team1_details_text}\n\n"
+        f"--- {team2_name} Oyuncu Bilgileri ---\n{team2_details_text}\n"
+    )
+
+    # Display WhatsApp share button
+    display_whatsapp_share_button(share_message)
 
 # ----------------------- Injured Players Display Function -----------------------
 
@@ -615,6 +704,37 @@ def apply_aggrid_styling(df, numerical_cols, color_renderer):
                         c['minValue'] = 0.0
     return grid_options
 
+# ----------------------- Load Team Rosters -----------------------
+
+@st.cache_data
+def load_team_rosters(yahoo_dir):
+    """
+    Loads team rosters from all XLSX files in the yahoo directory.
+    Each file should contain columns: 'Oyuncu Adı', 'Pozisyon'
+    Takım adı, dosya adından çıkarılır.
+    """
+    roster_files = glob.glob(os.path.join(yahoo_dir, "*.xlsx"))
+    team_rosters = pd.DataFrame()
+
+    for file in roster_files:
+        try:
+            df = pd.read_excel(file)
+            # Ensure required columns are present
+            if set(['Oyuncu Adı', 'Pozisyon']).issubset(df.columns):
+                # Extract team name from filename
+                filename = os.path.splitext(os.path.basename(file))[0]
+                team_name = filename  # Assuming filename is the team name
+                df['Takım'] = team_name  # Assign team name to 'Takım' column
+                team_rosters = pd.concat([team_rosters, df], ignore_index=True)
+            else:
+                st.error(f"File {file} is missing required columns ('Oyuncu Adı', 'Pozisyon').")
+        except Exception as e:
+            st.error(f"Failed to read {file}: {e}")
+
+    # Normalize player names for consistency
+    team_rosters['Player_Name_Normalized'] = team_rosters['Oyuncu Adı'].apply(normalize_player_name)
+    return team_rosters
+
 # ----------------------- Streamlit Main Application -----------------------
 
 def main():
@@ -640,6 +760,36 @@ def main():
             data = None
     else:
         data_load_status = "Data files not found. Please place 'merged_scores.xlsx' and 'nba-injury-report.xlsx' in the 'data' directory."
+        data = None
+
+    # ------------------- Load Team Rosters -------------------
+    if os.path.exists(yahoo_dir):
+        team_rosters = load_team_rosters(yahoo_dir)
+        if not team_rosters.empty:
+            # Normalize player names in merged_df for matching
+            data['Player_Name_Normalized'] = data['Player_Name'].apply(normalize_player_name)
+
+            # Get list of normalized database player names
+            db_player_names = data['Player_Name_Normalized'].tolist()
+
+            # Perform fuzzy matching
+            mapping, unmatched = map_yahoo_to_db_players(team_rosters, db_player_names, threshold=80)
+
+            # Add a new column to team_rosters with matched DB player names
+            team_rosters['DB_Player_Name'] = team_rosters['Player_Name_Normalized'].map(mapping)
+
+            # Handle unmatched players
+            if unmatched:
+                st.warning(f"{len(unmatched)} player(s) could not be matched to the database. They will be excluded from trade evaluations.")
+                team_rosters = team_rosters[team_rosters['DB_Player_Name'].notna()]
+
+            # Merge team rosters with player data using DB_Player_Name
+            data = pd.merge(data, team_rosters[['DB_Player_Name', 'Takım']], left_on='Player_Name_Normalized', right_on='DB_Player_Name', how='left')
+            data['Takım'] = data['Takım'].fillna('Free Agent')  # Assign 'Free Agent' to players not on any team
+        else:
+            st.error("Team rosters could not be loaded. Please check the 'yahoo' folder.")
+    else:
+        st.error(f"Yahoo directory not found at {yahoo_dir}. Please ensure the directory exists and contains the roster files.")
         data = None
 
     # ------------------- Display Data Information under the heading -------------------
@@ -668,34 +818,56 @@ def main():
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
-        # ------------------- Player Selection -------------------
-        # Create two columns for Team 1 and Team 2
-        col1, col2 = st.columns(2)
+        # ------------------- Team Selection -------------------
+        st.markdown("<h3 style='text-align: center;'>Trade Evaluation</h3>", unsafe_allow_html=True)
+        
+        # Get list of unique fantasy teams excluding 'Free Agent'
+        unique_teams = data['Takım'].unique().tolist()
+        unique_teams = [team for team in unique_teams if team != 'Free Agent']
+        
+        if len(unique_teams) < 2:
+            st.warning("Not enough teams available for trade evaluation.")
+            return
 
-        with col1:
-            # Team 1 Heading
-            st.markdown("<h3 style='text-align: center;'>Team 1: Select Players</h3>", unsafe_allow_html=True)
-            # Team 1 Selection List
+        # Select Team 1 and Team 2
+        col_team_selection = st.columns(2)
+        with col_team_selection[0]:
+            team1 = st.selectbox("Select Team 1", options=unique_teams, key="team1_select")
+        with col_team_selection[1]:
+            team2 = st.selectbox("Select Team 2", options=unique_teams, key="team2_select")
+        
+        if team1 == team2:
+            st.error("Please select two different teams for the trade.")
+            return
+
+        # ------------------- Player Selection -------------------
+        # Get players for each team
+        team1_players_available = data[data['Takım'] == team1]['Player_Name'].tolist()
+        team2_players_available = data[data['Takım'] == team2]['Player_Name'].tolist()
+
+        # Create two columns for player selections to arrange them side by side
+        col_player1, col_player2 = st.columns(2)
+
+        with col_player1:
+            st.markdown(f"### {team1} - Select Players to Trade to {team2}")
             team1_selected = st.multiselect(
-                "Select Players for Team 1",
-                options=data['Player_Name'].tolist(),
-                key="team1_selected"
+                f"Select Players from {team1}",
+                options=team1_players_available,
+                key="team1_selected_players"
             )
 
-        with col2:
-            # Team 2 Heading
-            st.markdown("<h3 style='text-align: center;'>Team 2: Select Players</h3>", unsafe_allow_html=True)
-            # Team 2 Selection List
+        with col_player2:
+            st.markdown(f"### {team2} - Select Players to Trade to {team1}")
             team2_selected = st.multiselect(
-                "Select Players for Team 2",
-                options=data['Player_Name'].tolist(),
-                key="team2_selected"
+                f"Select Players from {team2}",
+                options=team2_players_available,
+                key="team2_selected_players"
             )
 
         # Injury Status Selection for both teams side by side
         if team1_selected or team2_selected:
             st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
-            col_team1, col_team2 = st.columns(2)
+            col_injuries_team1, col_injuries_team2 = st.columns(2)
             
             # Injury options and adjustments
             injury_options = {
@@ -706,9 +878,9 @@ def main():
             
             # Team 1 Injury Status
             team1_injury_adjustments = []
-            with col_team1:
+            with col_injuries_team1:
                 if team1_selected:
-                    st.markdown("<h5 style='text-align: center;'>Team 1</h5>", unsafe_allow_html=True)
+                    st.markdown(f"#### {team1} Injury Adjustments", unsafe_allow_html=True)
                     for idx, player in enumerate(team1_selected):
                         col_player, col_status = st.columns([1, 3])
                         with col_player:
@@ -727,9 +899,9 @@ def main():
 
             # Team 2 Injury Status
             team2_injury_adjustments = []
-            with col_team2:
+            with col_injuries_team2:
                 if team2_selected:
-                    st.markdown("<h5 style='text-align: center;'>Team 2</h5>", unsafe_allow_html=True)
+                    st.markdown(f"#### {team2} Injury Adjustments", unsafe_allow_html=True)
                     for idx, player in enumerate(team2_selected):
                         col_player, col_status = st.columns([1, 3])
                         with col_player:
@@ -751,7 +923,7 @@ def main():
             team2_injury_adjustments = []
 
         # Center the Evaluate Trade button using columns
-        col_center = st.columns([1, 0.4, 1])
+        col_center = st.columns([1, 0.275, 1])
         with col_center[1]:
             submitted = st.button("📈 Evaluate Trade")
 
@@ -764,7 +936,7 @@ def main():
                 if not team1_selected and not team2_selected:
                     st.warning("Please select players for both teams to evaluate a trade.")
                 else:
-                    evaluate_trade(data, team1_selected, team2_selected, team1_injury_adjustments, team2_injury_adjustments)
+                    evaluate_trade(data, team1_selected, team2_selected, team1_injury_adjustments, team2_injury_adjustments, team1, team2)
 
     # ------------------- Player Rankings Tab -------------------
     with tab2:
