@@ -398,17 +398,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     display_whatsapp_share_button(share_message)
 
 # ----------------------- Injured Players Display Function -----------------------
-
-def display_injured_players(data):
-    """
-    Displays a table of injured players with their injury details.
-    """
-    injured_df = data[data['Injury'].str.lower() != 'healthy']
-    if injured_df.empty:
-        st.info("No injured players currently.")
-    else:
-        injured_players_df = injured_df[['Player_Name', 'Injury', 'Status']].reset_index(drop=True)
-        st.table(injured_players_df)
+# Removed the Injured Players display function as it's no longer needed.
 
 # ----------------------- Player Rankings Display Functions -----------------------
 
@@ -816,7 +806,8 @@ def main():
         return
 
     # ------------------- Create Tabs -------------------
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Trade Evaluation", "Player Rankings", "Total Scores", "Injured Players", "Player Scores Analysis"])
+    # Removed "Injured Players" tab
+    tab1, tab2, tab3, tab4 = st.tabs(["Trade Evaluation", "Player Rankings", "Total Scores", "Player Scores Analysis"])
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
@@ -948,17 +939,8 @@ def main():
     with tab3:
         display_total_scores(data)
 
-    # ------------------- Injured Players Tab -------------------
-    with tab4:
-        # Center the heading
-        st.markdown(
-            "<h3 style='text-align: center;'>🏥 Injured Players Information</h3>",
-            unsafe_allow_html=True
-        )
-        display_injured_players(data)
-
     # ------------------- Player Scores Analysis Tab -------------------
-    with tab5:
+    with tab4:
         st.markdown("<h3 style='text-align: center;'>📈 Player Scores Analysis</h3>", unsafe_allow_html=True)
 
         # Load Player Scores Data
