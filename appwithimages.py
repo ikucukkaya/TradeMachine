@@ -1063,7 +1063,7 @@ def main():
         # Load Player Scores Data
         try:
             player_scores = load_player_scores(player_scores_dir)
-            st.success("Player scores data loaded successfully.")
+            #st.success("Player scores data loaded successfully.")
         except ValueError as ve:
             st.error(ve)
             return
