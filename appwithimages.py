@@ -630,6 +630,8 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     # Create share message including the team averages
     share_message = (
+        f"--- {team1_name} Player Details ---\n{team1_details_text}\n\n"
+        f"--- {team2_name} Player Details ---\n{team2_details_text}\n\n"
         f"--- Team Averages Before and After Trade ---\n\n"
         f"{team1_regular_avg_text}\n\n"
         f"{team2_regular_avg_text}\n\n"
