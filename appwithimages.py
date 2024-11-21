@@ -131,7 +131,7 @@ def display_whatsapp_share_button(share_message):
         <style>
             .whatsapp-button-container {{
                 text-align: center;
-                margin-top: 30px;
+                margin-top: 40px;
             }}
             .whatsapp-button {{
                 margin-right: 32px;
@@ -499,7 +499,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team2_avg_before_projection = calculate_team_averages(df_rest_of_season, team2_players_current_normalized, num_top_players)
     team2_avg_after_projection = calculate_team_averages(df_rest_of_season, team2_players_after_normalized, num_top_players)
 
-    # ------------------- Display Team Averages -------------------
+# ------------------- Display Team Averages -------------------
 
     st.markdown("<h3 style='text-align: center;'>Team Averages Before and After Trade</h3>", unsafe_allow_html=True)
 
@@ -507,34 +507,30 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     def create_avg_dataframe(team_name, avg_before, avg_after):
         # Create DataFrame with numerical values
-        df = pd.DataFrame({
+        data = {
             'Category': categories,
             'Before Trade': [avg_before.get(cat, 0) for cat in categories],
-            'After Trade': [avg_after.get(cat, 0) for cat in categories]
-        })
+            'After Trade': [avg_after.get(cat, 0) for cat in categories],
+        }
+        df = pd.DataFrame(data)
         # Calculate the difference
         df['Diff'] = df['After Trade'] - df['Before Trade']
-        return df
+        # Set 'Category' as index and transpose
+        df.set_index('Category', inplace=True)
+        df_transposed = df.transpose()
+        return df_transposed
 
     def format_team_avg_dataframe(df):
         # Function to format and style the DataFrame
-        # Apply formatting based on category
-        def format_row(row):
-            if row['Category'] in ['FG%', 'FT%']:
-                before = f"{float(row['Before Trade']):.3f}"
-                after = f"{float(row['After Trade']):.3f}"
-                diff = f"{float(row['Diff']):.3f}"
+        def format_value(value, category):
+            if category in ['FG%', 'FT%']:
+                return f"{float(value):.3f}"
             else:
-                before = f"{float(row['Before Trade']):.2f}"
-                after = f"{float(row['After Trade']):.2f}"
-                diff = f"{float(row['Diff']):.2f}"
-            return pd.Series([before, after, diff], index=['Before Trade', 'After Trade', 'Diff'])
-        
-        # Apply the formatting to each row
-        formatted_df = df.apply(format_row, axis=1)
-        formatted_df.insert(0, 'Category', df['Category'])
-
-        # Apply conditional formatting to 'Diff' column
+                return f"{float(value):.2f}"
+        formatted_df = df.copy()
+        for col in formatted_df.columns:
+            formatted_df[col] = formatted_df[col].apply(lambda x: format_value(x, col))
+        # Apply conditional formatting to 'Diff' row
         def highlight_diff(val):
             try:
                 val_float = float(val)
@@ -547,7 +543,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 return f'background-color: {color}'
             except:
                 return ''
-        styled_df = formatted_df.style.applymap(highlight_diff, subset=['Diff'])
+        styled_df = formatted_df.style.applymap(highlight_diff, subset=pd.IndexSlice['Diff', :])
         return styled_df
 
     # Display Regular Season Averages
@@ -583,6 +579,66 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         df_team2_projection = create_avg_dataframe(team2_name, team2_avg_before_projection, team2_avg_after_projection)
         styled_df_team2_projection = format_team_avg_dataframe(df_team2_projection)
         st.write(styled_df_team2_projection)
+
+    # ------------------- Prepare Share Message and Display WhatsApp Button -------------------
+
+    # Prepare the team averages data for sharing
+    def df_to_text(df, team_name, title):
+        """
+        Converts the DataFrame to a formatted text table for sharing.
+
+        Parameters:
+        - df: DataFrame containing the team averages (transposed)
+        - team_name: Name of the team
+        - title: Title for the table (e.g., "Regular Season Averages")
+
+        Returns:
+        - A string representing the formatted table
+        """
+        lines = []
+        lines.append(f"{team_name} - {title}")
+        lines.append("Category |   Before  |   After   |    Diff")
+        lines.append("-----------------------------------------")
+
+        for category in df.columns:
+            before = df.at['Before Trade', category]
+            after = df.at['After Trade', category]
+            diff = df.at['Diff', category]
+
+            # Format values with appropriate decimal places
+            if category in ['FG%', 'FT%']:
+                before_formatted = f"{float(before):.3f}"
+                after_formatted = f"{float(after):.3f}"
+                diff_formatted = f"{float(diff):+0.003f}"
+            else:
+                before_formatted = f"{float(before):.2f}"
+                after_formatted = f"{float(after):.2f}"
+                diff_formatted = f"{float(diff):+0.2f}"
+
+            # Format the line with alignment
+            line = f"{category:<8} | {before_formatted:>8} | {after_formatted:>8} | {diff_formatted:>8}"
+            lines.append(line)
+
+        table_text = "\n".join(lines)
+        return table_text
+
+    # Generate text representations of the tables
+    team1_regular_avg_text = df_to_text(df_team1_regular, team1_name, "Regular Season Averages")
+    team2_regular_avg_text = df_to_text(df_team2_regular, team2_name, "Regular Season Averages")
+    team1_projection_avg_text = df_to_text(df_team1_projection, team1_name, "Rest of Season Projections")
+    team2_projection_avg_text = df_to_text(df_team2_projection, team2_name, "Rest of Season Projections")
+
+    # Create share message including the team averages
+    share_message = (
+        f"--- Team Averages Before and After Trade ---\n\n"
+        f"{team1_regular_avg_text}\n\n"
+        f"{team2_regular_avg_text}\n\n"
+        f"{team1_projection_avg_text}\n\n"
+        f"{team2_projection_avg_text}\n"
+    )
+
+    # Display WhatsApp share button
+    display_whatsapp_share_button(share_message)
 
 # ----------------------- Load Data Functions -----------------------
 
