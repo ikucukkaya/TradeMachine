@@ -521,7 +521,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         return df_transposed
 
     def format_team_avg_dataframe(df):
-        # Function to format and style the DataFrame
+    # Function to format and style the DataFrame
         def format_value(value, category):
             if category in ['FG%', 'FT%']:
                 return f"{float(value):.3f}"
@@ -531,19 +531,35 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         for col in formatted_df.columns:
             formatted_df[col] = formatted_df[col].apply(lambda x: format_value(x, col))
         # Apply conditional formatting to 'Diff' row
-        def highlight_diff(val):
-            try:
-                val_float = float(val)
-                if val_float > 0:
-                    color = 'lightgreen'
-                elif val_float < 0:
-                    color = 'salmon'
-                else:
-                    color = ''
-                return f'background-color: {color}'
-            except:
-                return ''
-        styled_df = formatted_df.style.applymap(highlight_diff, subset=pd.IndexSlice['Diff', :])
+        def highlight_diff_row(row):
+            if row.name != 'Diff':
+                return [''] * len(row)
+            else:
+                styles = []
+                for col in row.index:
+                    val = row[col]
+                    try:
+                        val_float = float(val)
+                        if col == 'TO':
+                            # For 'TO', invert the logic
+                            if val_float > 0:
+                                color = 'salmon'  # Increased TO is bad (red)
+                            elif val_float < 0:
+                                color = 'lightgreen'  # Decreased TO is good (green)
+                            else:
+                                color = ''
+                        else:
+                            if val_float > 0:
+                                color = 'lightgreen'
+                            elif val_float < 0:
+                                color = 'salmon'
+                            else:
+                                color = ''
+                        styles.append(f'background-color: {color}')
+                    except:
+                        styles.append('')
+                return styles
+        styled_df = formatted_df.style.apply(highlight_diff_row, axis=1)
         return styled_df
 
     # Display Regular Season Averages
@@ -1063,7 +1079,7 @@ def main():
         # Load Player Scores Data
         try:
             player_scores = load_player_scores(player_scores_dir)
-            #st.success("Player scores data loaded successfully.")
+            st.success("Player scores data loaded successfully.")
         except ValueError as ve:
             st.error(ve)
             return
