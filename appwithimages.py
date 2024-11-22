@@ -513,23 +513,36 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             'After Trade': [avg_after.get(cat, 0) for cat in categories],
         }
         df = pd.DataFrame(data)
-        # Calculate the difference
+        
+        # Round 'Before Trade' and 'After Trade' to match displayed precision
+        def round_value(value, category):
+            if category in ['FG%', 'FT%']:
+                return round(value, 3)
+            else:
+                return round(value, 2)
+        df['Before Trade'] = df.apply(lambda row: round_value(row['Before Trade'], row['Category']), axis=1)
+        df['After Trade'] = df.apply(lambda row: round_value(row['After Trade'], row['Category']), axis=1)
+        
+        # Calculate the difference using rounded values
         df['Diff'] = df['After Trade'] - df['Before Trade']
+        
         # Set 'Category' as index and transpose
         df.set_index('Category', inplace=True)
         df_transposed = df.transpose()
         return df_transposed
 
     def format_team_avg_dataframe(df):
-    # Function to format and style the DataFrame
+        # Function to format and style the DataFrame
         def format_value(value, category):
             if category in ['FG%', 'FT%']:
-                return f"{float(value):.3f}"
+                return f"{value:.3f}"
             else:
-                return f"{float(value):.2f}"
+                return f"{value:.2f}"
+        
         formatted_df = df.copy()
         for col in formatted_df.columns:
             formatted_df[col] = formatted_df[col].apply(lambda x: format_value(x, col))
+        
         # Apply conditional formatting to 'Diff' row
         def highlight_diff_row(row):
             if row.name != 'Diff':
@@ -537,27 +550,22 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             else:
                 styles = []
                 for col in row.index:
-                    val = row[col]
-                    try:
-                        val_float = float(val)
+                    val = float(row[col])
+                    if val == 0:
+                        color = ''  # No coloring if difference is zero
+                    else:
                         if col == 'TO':
-                            # For 'TO', invert the logic
-                            if val_float > 0:
-                                color = 'salmon'  # Increased TO is bad (red)
-                            elif val_float < 0:
+                            # Invert logic for 'TO'
+                            if val > 0:
+                                color = 'salmon'      # Increased TO is bad (red)
+                            elif val < 0:
                                 color = 'lightgreen'  # Decreased TO is good (green)
-                            else:
-                                color = ''
                         else:
-                            if val_float > 0:
-                                color = 'lightgreen'
-                            elif val_float < 0:
-                                color = 'salmon'
-                            else:
-                                color = ''
-                        styles.append(f'background-color: {color}')
-                    except:
-                        styles.append('')
+                            if val > 0:
+                                color = 'lightgreen'  # Improvement (green)
+                            elif val < 0:
+                                color = 'salmon'      # Decline (red)
+                    styles.append(f'background-color: {color}')
                 return styles
         styled_df = formatted_df.style.apply(highlight_diff_row, axis=1)
         return styled_df
