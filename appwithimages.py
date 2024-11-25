@@ -1184,21 +1184,37 @@ def main():
                         else:
                             if score_type in ["Regular", "Both"]:
                                 # Plot Regular Score
-                                ax.plot(
+                                line1, = ax.plot(
                                     player_data['Date'],
                                     player_data['Regular'],
-                                    label=f"{player} - Regular",
                                     linestyle=line_styles['Regular'],
                                     marker='o'
                                 )
+                                # Annotate the last point with player name
+                                ax.annotate(
+                                    f"{player} - Regular",
+                                    xy=(player_data['Date'].iloc[-1], player_data['Regular'].iloc[-1]),
+                                    xytext=(5, 0),
+                                    textcoords='offset points',
+                                    color=line1.get_color(),
+                                    fontsize=9
+                                )
                             if score_type in ["Projection", "Both"]:
                                 # Plot Projection Score
-                                ax.plot(
+                                line2, = ax.plot(
                                     player_data['Date'],
                                     player_data['Projection'],
-                                    label=f"{player} - Projection",
                                     linestyle=line_styles['Projection'],
                                     marker='x'
+                                )
+                                # Annotate the last point with player name
+                                ax.annotate(
+                                    f"{player} - Projection",
+                                    xy=(player_data['Date'].iloc[-1], player_data['Projection'].iloc[-1]),
+                                    xytext=(5, 0),
+                                    textcoords='offset points',
+                                    color=line2.get_color(),
+                                    fontsize=9
                                 )
 
                     ax.set_xlabel('Date')
@@ -1207,7 +1223,8 @@ def main():
                         ax.set_title(f'{selected_team} Players - Regular and Projection Scores Over Time')
                     else:
                         ax.set_title(f'{selected_team} Players - {score_type} Scores Over Time')
-                    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                    # Remove the legend
+                    # ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
                     ax.grid(True)
                     plt.xticks(rotation=45)
                     plt.tight_layout()
