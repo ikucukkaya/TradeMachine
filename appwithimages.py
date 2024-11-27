@@ -12,8 +12,8 @@ from rapidfuzz import process, fuzz  # type: ignore
 import matplotlib.pyplot as plt
 
 # Import st_aggrid components
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from st_aggrid.shared import GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode # type: ignore
+from st_aggrid.shared import GridUpdateMode # type: ignore
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -454,10 +454,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     # Create share message
     share_message = (
         f"Trade Evaluation:\n\n"
-        f"{team1_name} Total Score: {team1_total:.2f}\n"
-        f"{team2_name} Total Score: {team2_total:.2f}\n"
-        f"Trade Ratio: {trade_ratio:.2f}\n"
-        f"{trade_status_text}\n\n"
+        f"*{team1_name}* Total Score: *{team1_total:.2f}*\n"
+        f"*{team2_name}* Total Score: *{team2_total:.2f}*\n"
+        f"*Trade Ratio: {trade_ratio:.2f}*\n"
+        f"*{trade_status_text}*\n\n"
         f"--- {team1_name} Player Details ---\n{team1_details_text}\n\n"
         f"--- {team2_name} Player Details ---\n{team2_details_text}\n"
     )
