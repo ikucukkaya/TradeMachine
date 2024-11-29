@@ -12,8 +12,8 @@ from rapidfuzz import process, fuzz  # type: ignore
 import matplotlib.pyplot as plt
 
 # Import st_aggrid components
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from st_aggrid.shared import GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode # type: ignore
+from st_aggrid.shared import GridUpdateMode # type: ignore
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -454,10 +454,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     # Create share message
     share_message = (
         f"Trade Evaluation:\n\n"
-        f"{team1_name} Total Score: {team1_total:.2f}\n"
-        f"{team2_name} Total Score: {team2_total:.2f}\n"
-        f"Trade Ratio: {trade_ratio:.2f}\n"
-        f"{trade_status_text}\n\n"
+        f"*{team1_name}* Total Score: *{team1_total:.2f}*\n"
+        f"*{team2_name}* Total Score: *{team2_total:.2f}*\n"
+        f"*Trade Ratio: {trade_ratio:.2f}*\n"
+        f"*{trade_status_text}*\n\n"
         f"--- {team1_name} Player Details ---\n{team1_details_text}\n\n"
         f"--- {team2_name} Player Details ---\n{team2_details_text}\n"
     )
@@ -922,7 +922,7 @@ def main():
         return
 
     # ------------------- Create Tabs -------------------
-    tab1, tab4 = st.tabs(["Trade Evaluation", "Player Scores Analysis"])
+    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Scores Analysis", "Team Scores Analysis"])
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
@@ -1079,15 +1079,14 @@ def main():
                         df_rest_of_season,
                         num_top_players  # Pass the number of top players
                     )
-
     # ------------------- Player Scores Analysis Tab -------------------
-    with tab4:
+    with tab2:
         st.markdown("<h3 style='text-align: center;'>📈 Player Scores Analysis</h3>", unsafe_allow_html=True)
 
         # Load Player Scores Data
         try:
             player_scores = load_player_scores(player_scores_dir)
-            st.success("Player scores data loaded successfully.")
+            #st.success("Player scores data loaded successfully.")
         except ValueError as ve:
             st.error(ve)
             return
@@ -1124,6 +1123,112 @@ def main():
                 plt.xticks(rotation=45)
                 plt.tight_layout()
                 st.pyplot(fig)
+
+    # ------------------- Team Scores Analysis Tab -------------------
+    with tab3:
+        st.markdown("<h3 style='text-align: center;'>📈 Team Scores Analysis</h3>", unsafe_allow_html=True)
+
+        # Load Player Scores Data
+        try:
+            player_scores = load_player_scores(player_scores_dir)
+            #st.success("Player scores data loaded successfully.")
+        except ValueError as ve:
+            st.error(ve)
+            return
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            return
+
+        if player_scores.empty:
+            st.info("No player scores data available.")
+            return
+
+        # Get list of teams excluding 'Free Agent'
+        teams = sorted([team for team in data['Takım'].unique() if team != 'Free Agent'])
+
+        # Team selection
+        selected_team = st.selectbox("Select a Team", options=teams)
+
+        if selected_team:
+            # Get list of players in the selected team
+            team_players = data[data['Takım'] == selected_team]['Player_Name'].unique()
+
+            if len(team_players) == 0:
+                st.warning(f"No players found for team {selected_team}.")
+            else:
+                # Allow user to select which players to include
+                selected_players = st.multiselect("Select Players to Include", options=team_players, default=team_players)
+
+                if not selected_players:
+                    st.warning("No players selected.")
+                else:
+                    # Allow user to select which scores to display
+                    score_type = st.radio(
+                        "Select Score Type to Display",
+                        options=["Regular", "Projection", "Both"],
+                        index=2  # Default to "Both"
+                    )
+
+                    # Initialize the plot
+                    fig, ax = plt.subplots(figsize=(12, 8))
+
+                    # Define line styles for Regular and Projection scores
+                    line_styles = {'Regular': '-', 'Projection': '--'}
+
+                    # For each selected player, plot their scores over time based on selected score type
+                    for player in selected_players:
+                        player_data = player_scores[player_scores['Player_Name'] == player].sort_values('Date')
+                        if player_data.empty:
+                            st.warning(f"No data available for {player}.")
+                            continue
+                        else:
+                            if score_type in ["Regular", "Both"]:
+                                # Plot Regular Score
+                                line1, = ax.plot(
+                                    player_data['Date'],
+                                    player_data['Regular'],
+                                    linestyle=line_styles['Regular'],
+                                    marker='o'
+                                )
+                                # Annotate the last point with player name
+                                ax.annotate(
+                                    f"{player} - Regular",
+                                    xy=(player_data['Date'].iloc[-1], player_data['Regular'].iloc[-1]),
+                                    xytext=(5, 0),
+                                    textcoords='offset points',
+                                    color=line1.get_color(),
+                                    fontsize=9
+                                )
+                            if score_type in ["Projection", "Both"]:
+                                # Plot Projection Score
+                                line2, = ax.plot(
+                                    player_data['Date'],
+                                    player_data['Projection'],
+                                    linestyle=line_styles['Projection'],
+                                    marker='x'
+                                )
+                                # Annotate the last point with player name
+                                ax.annotate(
+                                    f"{player} - Projection",
+                                    xy=(player_data['Date'].iloc[-1], player_data['Projection'].iloc[-1]),
+                                    xytext=(5, 0),
+                                    textcoords='offset points',
+                                    color=line2.get_color(),
+                                    fontsize=9
+                                )
+
+                    ax.set_xlabel('Date')
+                    ax.set_ylabel('Score')
+                    if score_type == "Both":
+                        ax.set_title(f'{selected_team} Players - Regular and Projection Scores Over Time')
+                    else:
+                        ax.set_title(f'{selected_team} Players - {score_type} Scores Over Time')
+                    # Remove the legend
+                    # ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                    ax.grid(True)
+                    plt.xticks(rotation=45)
+                    plt.tight_layout()
+                    st.pyplot(fig)
 
 # ----------------------- Run the Application -----------------------
 
