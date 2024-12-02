@@ -339,41 +339,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team2_total = sum(team2_scores)
 
     # Handle empty slots for fair evaluation
-    empty_slots_info = ""
-    if len(team1_players) < len(team2_players):
-        empty_slots = len(team2_players) - len(team1_players)
-        team1_scores.extend([2.00] * empty_slots)
-        team1_total += 2.00 * empty_slots
-        for _ in range(empty_slots):
-            team1_details.append({
-                'player': 'Empty Slot',
-                'regular': '-',
-                'projection': '-',
-                'last14': '-',
-                'last30': '-',
-                'score': 2.00,
-                'image_path': placeholder_image_path,  # Use placeholder image
-                'injury_adjustment': 0
-            })
-        empty_slots_info = f"{team1_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
-        st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
-    elif len(team2_players) < len(team1_players):
-        empty_slots = len(team1_players) - len(team2_players)
-        team2_scores.extend([2.00] * empty_slots)
-        team2_total += 2.00 * empty_slots
-        for _ in range(empty_slots):
-            team2_details.append({
-                'player': 'Empty Slot',
-                'regular': '-',
-                'projection': '-',
-                'last14': '-',
-                'last30': '-',
-                'score': 2.00,
-                'image_path': placeholder_image_path,  # Use placeholder image
-                'injury_adjustment': 0
-            })
-        empty_slots_info = f"{team2_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
-        st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
+    # ... (existing code)
 
     # Display Trade Evaluation side by side
     col1, col2 = st.columns([1, 1])  # Equal width columns
@@ -397,10 +363,11 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                             injury_note = " (IL - Up to 4 Weeks)"
                         elif detail['injury_adjustment'] == -2:
                             injury_note = " (IL - Indefinitely)"
+                        # Updated order of attributes
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
                             f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Last14: {detail['last14']}, Last30: {detail['last30']}, Score: {detail['score']:.2f})"
+                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
                         )
@@ -423,10 +390,11 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                             injury_note = " (IL - Up to 4 Weeks)"
                         elif detail['injury_adjustment'] == -2:
                             injury_note = " (IL - Indefinitely)"
+                        # Updated order of attributes
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
                             f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Last14: {detail['last14']}, Last30: {detail['last30']}, Score: {detail['score']:.2f})"
+                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
                         )
@@ -456,11 +424,26 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
      # ------------------- WhatsApp Share -------------------
     
     # Prepare player details for sharing
-    team1_details_text = "\n".join(
-        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Last14={detail['last14']}, Last30={detail['last30']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team1_details]
+    team1_details_text = "\n\n".join(
+        [
+            f"*{detail['player']}:*\n"
+            f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
+            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
+            f"*Total: {detail['score']:.2f}*\n"
+            f"Adjustment: {detail['injury_adjustment']}"
+            for detail in team1_details
+        ]
     )
-    team2_details_text = "\n".join(
-        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Last14={detail['last14']}, Last30={detail['last30']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team2_details]
+
+    team2_details_text = "\n\n".join(
+        [
+            f"*{detail['player']}:*\n"
+            f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
+            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
+            f"*Total: {detail['score']:.2f}*\n"
+            f"Adjustment: {detail['injury_adjustment']}"
+            for detail in team2_details
+        ]
     )
 
     # Create share message
