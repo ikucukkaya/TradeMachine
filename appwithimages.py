@@ -460,10 +460,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     # Prepare player details for sharing
     team1_details_text = "\n\n".join(
         [
-            f"{detail['player']}:\n"
+            f"*{detail['player']}:*\n"
             f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
-            f"Regular: {detail['regular']}  Projection: {detail['projection']}\n"
-            f"Total: {detail['score']:.2f}\n"
+            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
+            f"*Total: {detail['score']:.2f}*\n"
             f"Adjustment: {detail['injury_adjustment']}"
             for detail in team1_details
         ]
@@ -471,10 +471,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     team2_details_text = "\n\n".join(
         [
-            f"{detail['player']}:\n"
+            f"*{detail['player']}:*\n"
             f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
-            f"Regular: {detail['regular']}  Projection: {detail['projection']}\n"
-            f"Total: {detail['score']:.2f}\n"
+            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
+            f"*Total: {detail['score']:.2f}*\n"
             f"Adjustment: {detail['injury_adjustment']}"
             for detail in team2_details
         ]
