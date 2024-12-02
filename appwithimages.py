@@ -12,8 +12,8 @@ from rapidfuzz import process, fuzz  # type: ignore
 import matplotlib.pyplot as plt
 
 # Import st_aggrid components
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
-from st_aggrid.shared import GridUpdateMode  # type: ignore
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode # type: ignore
+from st_aggrid.shared import GridUpdateMode # type: ignore
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -265,7 +265,7 @@ def calculate_team_averages(df, player_list_normalized, num_top_players):
 
 # ----------------------- Trade Evaluation Function -----------------------
 
-def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name, df_regular_season, df_rest_of_season, df_last14, df_last30, num_top_players):
+def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name, df_regular_season, df_rest_of_season, num_top_players):
     """
     Evaluates the trade between Team 1 and Team 2 based on selected players and injury adjustments.
     """
@@ -284,8 +284,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
-        last14 = player_data.get('Last14', 'N/A')  # Get Last14 score
-        last30 = player_data.get('Last30', 'N/A')  # Get Last30 score
         team1_scores.append(score)
         
         # Get player image path
@@ -296,8 +294,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             'player': player,
             'regular': regular,
             'projection': projection,
-            'last14': last14,
-            'last30': last30,
             'score': score,
             'image_path': image_path,
             'injury_adjustment': injury_adjustment
@@ -317,8 +313,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
-        last14 = player_data.get('Last14', 'N/A')  # Get Last14 score
-        last30 = player_data.get('Last30', 'N/A')  # Get Last30 score
         team2_scores.append(score)
         
         # Get player image path
@@ -329,8 +323,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             'player': player,
             'regular': regular,
             'projection': projection,
-            'last14': last14,
-            'last30': last30,
             'score': score,
             'image_path': image_path,
             'injury_adjustment': injury_adjustment
@@ -339,7 +331,37 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team2_total = sum(team2_scores)
 
     # Handle empty slots for fair evaluation
-    # ... (existing code)
+    empty_slots_info = ""
+    if len(team1_players) < len(team2_players):
+        empty_slots = len(team2_players) - len(team1_players)
+        team1_scores.extend([2.00] * empty_slots)
+        team1_total += 2.00 * empty_slots
+        for _ in range(empty_slots):
+            team1_details.append({
+                'player': 'Empty Slot',
+                'regular': '-',
+                'projection': '-',
+                'score': 2.00,
+                'image_path': placeholder_image_path,  # Use placeholder image
+                'injury_adjustment': 0
+            })
+        empty_slots_info = f"{team1_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
+        st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
+    elif len(team2_players) < len(team1_players):
+        empty_slots = len(team1_players) - len(team2_players)
+        team2_scores.extend([2.00] * empty_slots)
+        team2_total += 2.00 * empty_slots
+        for _ in range(empty_slots):
+            team2_details.append({
+                'player': 'Empty Slot',
+                'regular': '-',
+                'projection': '-',
+                'score': 2.00,
+                'image_path': placeholder_image_path,  # Use placeholder image
+                'injury_adjustment': 0
+            })
+        empty_slots_info = f"{team2_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
+        st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
 
     # Display Trade Evaluation side by side
     col1, col2 = st.columns([1, 1])  # Equal width columns
@@ -363,11 +385,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                             injury_note = " (IL - Up to 4 Weeks)"
                         elif detail['injury_adjustment'] == -2:
                             injury_note = " (IL - Indefinitely)"
-                        # Updated order of attributes
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
                             f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
+                            f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
                         )
@@ -390,11 +411,10 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                             injury_note = " (IL - Up to 4 Weeks)"
                         elif detail['injury_adjustment'] == -2:
                             injury_note = " (IL - Indefinitely)"
-                        # Updated order of attributes
                         st.markdown(
                             f"<div style='font-size:16px; margin-top:12px;'>"
                             f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
+                            f"(Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
                             f"</div>",
                             unsafe_allow_html=True
                         )
@@ -424,26 +444,11 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
      # ------------------- WhatsApp Share -------------------
     
     # Prepare player details for sharing
-    team1_details_text = "\n\n".join(
-        [
-            f"*{detail['player']}:*\n"
-            f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
-            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
-            f"*Total: {detail['score']:.2f}*\n"
-            f"Adjustment: {detail['injury_adjustment']}"
-            for detail in team1_details
-        ]
+    team1_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team1_details]
     )
-
-    team2_details_text = "\n\n".join(
-        [
-            f"*{detail['player']}:*\n"
-            f"Last14: {detail['last14']}  Last30: {detail['last30']}\n"
-            f"*Regular: {detail['regular']}  Projection: {detail['projection']}*\n"
-            f"*Total: {detail['score']:.2f}*\n"
-            f"Adjustment: {detail['injury_adjustment']}"
-            for detail in team2_details
-        ]
+    team2_details_text = "\n".join(
+        [f"{detail['player']}: Regular={detail['regular']}, Projection={detail['projection']}, Score={detail['score']:.2f}, Adjustment={detail['injury_adjustment']}" for detail in team2_details]
     )
 
     # Create share message
@@ -493,20 +498,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     team2_avg_before_projection = calculate_team_averages(df_rest_of_season, team2_players_current_normalized, num_top_players)
     team2_avg_after_projection = calculate_team_averages(df_rest_of_season, team2_players_after_normalized, num_top_players)
-
-    # Calculate Team Averages Before and After Trade for Last14
-    team1_avg_before_last14 = calculate_team_averages(df_last14, team1_players_current_normalized, num_top_players)
-    team1_avg_after_last14 = calculate_team_averages(df_last14, team1_players_after_normalized, num_top_players)
-
-    team2_avg_before_last14 = calculate_team_averages(df_last14, team2_players_current_normalized, num_top_players)
-    team2_avg_after_last14 = calculate_team_averages(df_last14, team2_players_after_normalized, num_top_players)
-
-    # Calculate Team Averages Before and After Trade for Last30
-    team1_avg_before_last30 = calculate_team_averages(df_last30, team1_players_current_normalized, num_top_players)
-    team1_avg_after_last30 = calculate_team_averages(df_last30, team1_players_after_normalized, num_top_players)
-
-    team2_avg_before_last30 = calculate_team_averages(df_last30, team2_players_current_normalized, num_top_players)
-    team2_avg_after_last30 = calculate_team_averages(df_last30, team2_players_after_normalized, num_top_players)
 
 # ------------------- Display Team Averages -------------------
 
@@ -613,40 +604,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         styled_df_team2_projection = format_team_avg_dataframe(df_team2_projection)
         st.write(styled_df_team2_projection)
 
-    # Display Last14 Averages
-    st.markdown("#### 📊 Last 14 Days Averages")
-
-    col_team1_last14, col_team2_last14 = st.columns(2)
-
-    with col_team1_last14:
-        st.markdown(f"### {team1_name}")
-        df_team1_last14 = create_avg_dataframe(team1_name, team1_avg_before_last14, team1_avg_after_last14)
-        styled_df_team1_last14 = format_team_avg_dataframe(df_team1_last14)
-        st.write(styled_df_team1_last14)
-
-    with col_team2_last14:
-        st.markdown(f"### {team2_name}")
-        df_team2_last14 = create_avg_dataframe(team2_name, team2_avg_before_last14, team2_avg_after_last14)
-        styled_df_team2_last14 = format_team_avg_dataframe(df_team2_last14)
-        st.write(styled_df_team2_last14)
-
-    # Display Last30 Averages
-    st.markdown("#### 📊 Last 30 Days Averages")
-
-    col_team1_last30, col_team2_last30 = st.columns(2)
-
-    with col_team1_last30:
-        st.markdown(f"### {team1_name}")
-        df_team1_last30 = create_avg_dataframe(team1_name, team1_avg_before_last30, team1_avg_after_last30)
-        styled_df_team1_last30 = format_team_avg_dataframe(df_team1_last30)
-        st.write(styled_df_team1_last30)
-
-    with col_team2_last30:
-        st.markdown(f"### {team2_name}")
-        df_team2_last30 = create_avg_dataframe(team2_name, team2_avg_before_last30, team2_avg_after_last30)
-        styled_df_team2_last30 = format_team_avg_dataframe(df_team2_last30)
-        st.write(styled_df_team2_last30)
-
     # ------------------- Prepare Share Message and Display WhatsApp Button -------------------
 
     # Prepare the team averages data for sharing
@@ -694,10 +651,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team2_regular_avg_text = df_to_text(df_team2_regular, team2_name, "Regular Season Averages")
     team1_projection_avg_text = df_to_text(df_team1_projection, team1_name, "Rest of Season Projections")
     team2_projection_avg_text = df_to_text(df_team2_projection, team2_name, "Rest of Season Projections")
-    team1_last14_avg_text = df_to_text(df_team1_last14, team1_name, "Last 14 Days Averages")
-    team2_last14_avg_text = df_to_text(df_team2_last14, team2_name, "Last 14 Days Averages")
-    team1_last30_avg_text = df_to_text(df_team1_last30, team1_name, "Last 30 Days Averages")
-    team2_last30_avg_text = df_to_text(df_team2_last30, team2_name, "Last 30 Days Averages")
 
     # Create share message including the team averages
     share_message = (
@@ -707,11 +660,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         f"{team1_regular_avg_text}\n\n"
         f"{team2_regular_avg_text}\n\n"
         f"{team1_projection_avg_text}\n\n"
-        f"{team2_projection_avg_text}\n\n"
-        f"{team1_last14_avg_text}\n\n"
-        f"{team2_last14_avg_text}\n\n"
-        f"{team1_last30_avg_text}\n\n"
-        f"{team2_last30_avg_text}\n"
+        f"{team2_projection_avg_text}\n"
     )
 
     # Display WhatsApp share button
@@ -791,48 +740,6 @@ def load_rest_of_season_data():
         return df_rest_of_season
     except Exception as e:
         st.error(f"Failed to load Rest of Season Projections: {e}")
-        return pd.DataFrame()
-
-@st.cache_data
-def load_last14_data():
-    """
-    Loads and processes Last 14 Days data.
-    """
-    last14_path = os.path.join(data_dir, "Last_14_days_of_the_2024-25_NBA_Regular_Season_Updated_daily.xlsx")
-    try:
-        df_last14 = pd.read_excel(last14_path)
-        # Process similar to regular season data
-        required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
-        df_last14 = df_last14[required_columns].copy()
-        df_last14 = df_last14.rename(columns={'PLAYER': 'Player_Name'})
-        numerical_cols = ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'R#']
-        for col in numerical_cols:
-            df_last14[col] = pd.to_numeric(df_last14[col], errors='coerce')
-        df_last14['Player_Name_Normalized'] = df_last14['Player_Name'].apply(normalize_player_name)
-        return df_last14
-    except Exception as e:
-        st.error(f"Failed to load Last 14 Days data: {e}")
-        return pd.DataFrame()
-
-@st.cache_data
-def load_last30_data():
-    """
-    Loads and processes Last 30 Days data.
-    """
-    last30_path = os.path.join(data_dir, "Last_30_days_of_the_2024-25_NBA_Regular_Season_Updated_daily.xlsx")
-    try:
-        df_last30 = pd.read_excel(last30_path)
-        # Process similar to regular season data
-        required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
-        df_last30 = df_last30[required_columns].copy()
-        df_last30 = df_last30.rename(columns={'PLAYER': 'Player_Name'})
-        numerical_cols = ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'R#']
-        for col in numerical_cols:
-            df_last30[col] = pd.to_numeric(df_last30[col], errors='coerce')
-        df_last30['Player_Name_Normalized'] = df_last30['Player_Name'].apply(normalize_player_name)
-        return df_last30
-    except Exception as e:
-        st.error(f"Failed to load Last 30 Days data: {e}")
         return pd.DataFrame()
 
 # ----------------------- Load Team Rosters -----------------------
@@ -985,21 +892,13 @@ def main():
     df_regular_season = load_regular_season_data()
     df_rest_of_season = load_rest_of_season_data()
 
-    # Load Last14 and Last30 data
-    df_last14 = load_last14_data()
-    df_last30 = load_last30_data()
-
     # Normalize player names in regular season and projection data
     df_regular_season['Player_Name_Normalized'] = df_regular_season['Player_Name'].apply(normalize_player_name)
     df_rest_of_season['Player_Name_Normalized'] = df_rest_of_season['Player_Name'].apply(normalize_player_name)
-    df_last14['Player_Name_Normalized'] = df_last14['Player_Name'].apply(normalize_player_name)
-    df_last30['Player_Name_Normalized'] = df_last30['Player_Name'].apply(normalize_player_name)
 
     # Merge 'Takım' column into regular season and projection data
     df_regular_season = pd.merge(df_regular_season, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
     df_rest_of_season = pd.merge(df_rest_of_season, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
-    df_last14 = pd.merge(df_last14, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
-    df_last30 = pd.merge(df_last30, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
 
     # ------------------- Display Data Information under the heading -------------------
     if 'last_updated' in st.session_state:
@@ -1178,8 +1077,6 @@ def main():
                         team2,
                         df_regular_season,
                         df_rest_of_season,
-                        df_last14,
-                        df_last30,
                         num_top_players  # Pass the number of top players
                     )
     # ------------------- Player Scores Analysis Tab -------------------
