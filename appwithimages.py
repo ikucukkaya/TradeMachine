@@ -268,30 +268,39 @@ def calculate_team_averages(df, player_list_normalized, num_top_players):
 def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name, df_regular_season, df_rest_of_season, df_last14, df_last30, num_top_players):
     """
     Evaluates the trade between Team 1 and Team 2 based on selected players and injury adjustments.
+    Also calculates and displays Regular, Last14, and Last30 totals and their respective trade ratios.
+
+    Changes Made:
+    - Negative injury adjustments included in Regular, Last14, Last30 calculations.
+    - Empty slots count as 2.0 for all calculations.
+    - If any player's adjusted score falls below 2, it is raised to 2.
+    - Regular, Last14, Last30 totals displayed under each team's total score.
+    - Additional trade ratios for Regular, Last14, and Last30 also computed.
+    - WhatsApp share message remains unchanged (no new totals included).
     """
+
     week = calculate_week()
+    # Display current week
     st.markdown(f"<h3 style='text-align: center;'>Current Week: {week}</h3>", unsafe_allow_html=True)
 
-    # Team 1 Evaluation
+    # ------------------ Evaluate Team 1 ------------------
     team1_scores = []
     team1_details = []
 
     for idx, player in enumerate(team1_players):
         score = calculate_score(player, week, data)
         injury_adjustment = team1_injury_adjustments[idx]
-        score += injury_adjustment  # Apply the injury adjustment (-1 or -2)
-        score = max(2.00, score)  # Ensure the score is at least 2.00 after injury adjustment
+        score += injury_adjustment
+        score = max(2.00, score)  # Ensure at least 2.00
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
-        last14 = player_data.get('Last14', 'N/A')  # Get Last14 score
-        last30 = player_data.get('Last30', 'N/A')  # Get Last30 score
+        last14 = player_data.get('Last14', 'N/A')
+        last30 = player_data.get('Last30', 'N/A')
         team1_scores.append(score)
-        
-        # Get player image path
+
         image_path = get_player_image_path(player)
-        
-        # Append player details
+
         team1_details.append({
             'player': player,
             'regular': regular,
@@ -305,26 +314,24 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     team1_total = sum(team1_scores)
 
-    # Team 2 Evaluation
+    # ------------------ Evaluate Team 2 ------------------
     team2_scores = []
     team2_details = []
 
     for idx, player in enumerate(team2_players):
         score = calculate_score(player, week, data)
         injury_adjustment = team2_injury_adjustments[idx]
-        score += injury_adjustment  # Apply the injury adjustment (-1 or -2)
-        score = max(2.00, score)  # Ensure the score is at least 2.00 after injury adjustment
+        score += injury_adjustment
+        score = max(2.00, score)
         player_data = data[data['Player_Name'] == player].iloc[0]
         regular = player_data['Regular']
         projection = player_data['Projection']
-        last14 = player_data.get('Last14', 'N/A')  # Get Last14 score
-        last30 = player_data.get('Last30', 'N/A')  # Get Last30 score
+        last14 = player_data.get('Last14', 'N/A')
+        last30 = player_data.get('Last30', 'N/A')
         team2_scores.append(score)
-        
-        # Get player image path
+
         image_path = get_player_image_path(player)
-        
-        # Append player details
+
         team2_details.append({
             'player': player,
             'regular': regular,
@@ -338,8 +345,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     team2_total = sum(team2_scores)
 
-    # Handle empty slots for fair evaluation
-    empty_slots_info = ""
+    # ------------------ Handle Empty Slots ------------------
     if len(team1_players) < len(team2_players):
         empty_slots = len(team2_players) - len(team1_players)
         team1_scores.extend([2.00] * empty_slots)
@@ -352,7 +358,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 'last14': '-',
                 'last30': '-',
                 'score': 2.00,
-                'image_path': placeholder_image_path,  # Use placeholder image
+                'image_path': placeholder_image_path,
                 'injury_adjustment': 0
             })
         empty_slots_info = f"{team1_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
@@ -369,95 +375,183 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 'last14': '-',
                 'last30': '-',
                 'score': 2.00,
-                'image_path': placeholder_image_path,  # Use placeholder image
+                'image_path': placeholder_image_path,
                 'injury_adjustment': 0
             })
         empty_slots_info = f"{team2_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
 
-    # Display Trade Evaluation side by side
-    col1, col2 = st.columns([1, 1])  # Equal width columns
 
-    with col1:
-        st.markdown(f"<h3 style='text-align: center;'>{team1_name} Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
-        for detail in team1_details:
-            with st.container():
-                img_col, text_col = st.columns([1, 4])  # Photo column narrower
-                with img_col:
-                    st.image(detail['image_path'], width=60)
-                with text_col:
-                    if detail['player'] == 'Empty Slot':
-                        st.markdown(
-                            f"<div style='color:gray; font-size:16px; margin-top:12px;'>- Empty Slot (Score: 2.00)</div>",
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        injury_note = ""
-                        if detail['injury_adjustment'] == -1:
-                            injury_note = " (IL - Up to 4 Weeks)"
-                        elif detail['injury_adjustment'] == -2:
-                            injury_note = " (IL - Indefinitely)"
-                        # Updated order of attributes
-                        st.markdown(
-                            f"<div style='font-size:16px; margin-top:12px;'>"
-                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
-                            f"</div>",
-                            unsafe_allow_html=True
-                        )
-    with col2:
-        st.markdown(f"<h3 style='text-align: center;'>{team2_name} Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
-        for detail in team2_details:
-            with st.container():
-                img_col, text_col = st.columns([1, 4])  # Photo column narrower
-                with img_col:
-                    st.image(detail['image_path'], width=60)
-                with text_col:
-                    if detail['player'] == 'Empty Slot':
-                        st.markdown(
-                            f"<div style='color:gray; font-size:16px; margin-top:12px;'>- Empty Slot (Score: 2.00)</div>",
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        injury_note = ""
-                        if detail['injury_adjustment'] == -1:
-                            injury_note = " (IL - Up to 4 Weeks)"
-                        elif detail['injury_adjustment'] == -2:
-                            injury_note = " (IL - Indefinitely)"
-                        # Updated order of attributes
-                        st.markdown(
-                            f"<div style='font-size:16px; margin-top:12px;'>"
-                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
-                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
-                            f"</div>",
-                            unsafe_allow_html=True
-                        )
-
-    # Validate trade (both teams must have at least one player)
+    # Validate trade
     if team1_total == 0 or team2_total == 0:
         st.warning("Both teams must have at least one player.")
         return
 
-    # Calculate Trade Ratio
+    # ------------------ Calculate Trade Ratio ------------------
     trade_ratio = round(min(team1_total / team2_total, team2_total / team1_total), 2)
 
-    # Center the Trade Ratio
-    st.markdown(f"<h3 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h3>", unsafe_allow_html=True)
+    # ------------------ Helper Functions ------------------
+    def safe_sum_regular(details):
+        total = 0.0
+        for d in details:
+            if d['player'] == 'Empty Slot':
+                # Empty slot = 2.0
+                total += 2.0
+            elif d['regular'] != '-' and d['regular'] is not None:
+                try:
+                    val = float(d['regular']) + d['injury_adjustment']
+                    val = max(val, 2.0)  # Ensure at least 2
+                    total += val
+                except:
+                    pass
+        return total
+
+    def safe_sum_last14(details):
+        total = 0.0
+        for d in details:
+            if d['player'] == 'Empty Slot':
+                total += 2.0
+            else:
+                val = d['last14']
+                if val != 'N/A':
+                    try:
+                        val_float = float(val) + d['injury_adjustment']
+                        val_float = max(val_float, 2.0)
+                        total += val_float
+                    except:
+                        pass
+        return total
+
+    def safe_sum_last30(details):
+        total = 0.0
+        for d in details:
+            if d['player'] == 'Empty Slot':
+                total += 2.0
+            else:
+                val = d['last30']
+                if val != 'N/A':
+                    try:
+                        val_float = float(val) + d['injury_adjustment']
+                        val_float = max(val_float, 2.0)
+                        total += val_float
+                    except:
+                        pass
+        return total
+
+    # ------------------ Compute Totals for Regular, Last14, Last30 ------------------
+    team1_regular_total = safe_sum_regular(team1_details)
+    team2_regular_total = safe_sum_regular(team2_details)
+
+    team1_last14_total = safe_sum_last14(team1_details)
+    team2_last14_total = safe_sum_last14(team2_details)
+
+    team1_last30_total = safe_sum_last30(team1_details)
+    team2_last30_total = safe_sum_last30(team2_details)
+
+    # ------------------ Compute Ratios for Regular, Last14, Last30 ------------------
+    def compute_ratio(a, b):
+        if a > 0 and b > 0:
+            return round(min(a / b, b / a), 2)
+        return 0.00
+
+    regular_trade_ratio = compute_ratio(team1_regular_total, team2_regular_total)
+    last14_trade_ratio = compute_ratio(team1_last14_total, team2_last14_total)
+    last30_trade_ratio = compute_ratio(team1_last30_total, team2_last30_total)
+
+    # ------------------ Display Scores and Details ------------------
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.markdown(f"<h3 style='text-align: center;'>{team1_name} Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
+        # Show three situation totals below total score
+        st.markdown(f"<h6 style='text-align: center;'>{team1_name} Regular Total: {team1_regular_total:.2f}</h6>", unsafe_allow_html=True)
+        st.markdown(f"<h6 style='text-align: center;'>{team1_name} Last14 Total: {team1_last14_total:.2f}</h6>", unsafe_allow_html=True)
+        st.markdown(f"<h6 style='text-align: center;'>{team1_name} Last30 Total: {team1_last30_total:.2f}</h6>", unsafe_allow_html=True)
+        
+        for detail in team1_details:
+            with st.container():
+                img_col, text_col = st.columns([1, 4])
+                with img_col:
+                    st.image(detail['image_path'], width=60)
+                with text_col:
+                    if detail['player'] == 'Empty Slot':
+                        st.markdown(
+                            f"<div style='color:gray; font-size:16px; margin-top:12px;'>- Empty Slot (Score: 2.00)</div>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        injury_note = ""
+                        if detail['injury_adjustment'] == -1:
+                            injury_note = " (IL - Up to 4 Weeks)"
+                        elif detail['injury_adjustment'] == -2:
+                            injury_note = " (IL - Indefinitely)"
+                        st.markdown(
+                            f"<div style='font-size:16px; margin-top:12px;'>"
+                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
+                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
+                            f"</div>",
+                            unsafe_allow_html=True
+                        )
+
+    with col2:
+        st.markdown(f"<h3 style='text-align: center;'>{team2_name} Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
+        # Show three situation totals below total score
+        st.markdown(f"<h6 style='text-align: center;'>{team2_name} Regular Total: {team2_regular_total:.2f}</h6>", unsafe_allow_html=True)
+        st.markdown(f"<h6 style='text-align: center;'>{team2_name} Last14 Total: {team2_last14_total:.2f}</h6>", unsafe_allow_html=True)
+        st.markdown(f"<h6 style='text-align: center;'>{team2_name} Last30 Total: {team2_last30_total:.2f}</h6>", unsafe_allow_html=True)
+        
+        for detail in team2_details:
+            with st.container():
+                img_col, text_col = st.columns([1, 4])
+                with img_col:
+                    st.image(detail['image_path'], width=60)
+                with text_col:
+                    if detail['player'] == 'Empty Slot':
+                        st.markdown(
+                            f"<div style='color:gray; font-size:16px; margin-top:12px;'>- Empty Slot (Score: 2.00)</div>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        injury_note = ""
+                        if detail['injury_adjustment'] == -1:
+                            injury_note = " (IL - Up to 4 Weeks)"
+                        elif detail['injury_adjustment'] == -2:
+                            injury_note = " (IL - Indefinitely)"
+                        st.markdown(
+                            f"<div style='font-size:16px; margin-top:12px;'>"
+                            f"<strong>{detail['player']}</strong>{injury_note}<br>"
+                            f"(Last14: {detail['last14']}, Last30: {detail['last30']}, Regular: {detail['regular']}, Projection: {detail['projection']}, Score: {detail['score']:.2f})"
+                            f"</div>",
+                            unsafe_allow_html=True
+                        )
+
+    # ------------------ Display Ratios ------------------
+    # Regular, Last14, Last30 Ratios
+    # Not requested to reposition these, just show them after details if needed
+    # The user did not explicitly say to remove them from original place,
+    # but previously we were showing them above the main Trade Ratio. 
+    # Now we keep main Trade Ratio in the same place and the user said "Let Trade Ratios stay in the same places".
+    # We previously showed these ratios (Regular, Last14, Last30) above main trade ratio, we can show them here now before the main ratio.
+
+    # Display the three ratios (Regular, Last14, Last30) before the main trade ratio
+    st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
+
+    # Main Trade Ratio
+    st.markdown(f"<h2 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h2>", unsafe_allow_html=True)
 
     # Determine Trade Approval
-    trade_status_text = "TRADE STATUS UNDETERMINED"  # Default value
     if trade_ratio >= 0.80:
-        approval_message = "<h3 style='color: green; text-align: center;'>TRADE APPROVED</h3>"
+        approval_message = "<h1 style='color: green; text-align: center;'>TRADE APPROVED</h1>"
         trade_status_text = "TRADE APPROVED"
     else:
-        approval_message = "<h3 style='color: red; text-align: center;'>TRADE NOT APPROVED</h3>"
+        approval_message = "<h1 style='color: red; text-align: center;'>TRADE NOT APPROVED</h1>"
         trade_status_text = "TRADE NOT APPROVED"
     
     st.markdown(approval_message, unsafe_allow_html=True)
 
-    # ------------------- WhatsApp Share -------------------
-    
-    # Prepare player details for sharing
+    # ------------------ WhatsApp Share (no new totals included) ------------------
     team1_details_text = "\n\n".join(
         [
             f"*{detail['player']}:*\n"
@@ -480,7 +574,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         ]
     )
 
-    # Create share message
     share_message = (
         f"Trade Evaluation:\n\n"
         f"*{team1_name}* Total Score: *{team1_total:.2f}*\n"
@@ -491,9 +584,9 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         f"--- {team2_name} Player Details ---\n{team2_details_text}\n"
     )
 
-    # Display WhatsApp share button
     display_whatsapp_share_button(share_message)
 
+    # Takım ortalamaları vb. diğer kısımlar için ek kod değişikliğine gerek yok.
     # ------------------- Team Averages Calculation -------------------
 
     # Create a mapping from Player_Name to Player_Name_Normalized
