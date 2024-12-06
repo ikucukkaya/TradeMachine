@@ -266,21 +266,7 @@ def calculate_team_averages(df, player_list_normalized, num_top_players):
 # ----------------------- Trade Evaluation Function -----------------------
 
 def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name, df_regular_season, df_rest_of_season, df_last14, df_last30, num_top_players):
-    """
-    Evaluates the trade between Team 1 and Team 2 based on selected players and injury adjustments.
-    Also calculates and displays Regular, Last14, and Last30 totals and their respective trade ratios.
-
-    Changes Made:
-    - Negative injury adjustments included in Regular, Last14, Last30 calculations.
-    - Empty slots count as 2.0 for all calculations.
-    - If any player's adjusted score falls below 2, it is raised to 2.
-    - Regular, Last14, Last30 totals displayed under each team's total score.
-    - Additional trade ratios for Regular, Last14, and Last30 also computed.
-    - WhatsApp share message remains unchanged (no new totals included).
-    """
-
     week = calculate_week()
-    # Display current week
     st.markdown(f"<h3 style='text-align: center;'>Current Week: {week}</h3>", unsafe_allow_html=True)
 
     # ------------------ Evaluate Team 1 ------------------
@@ -395,12 +381,11 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         total = 0.0
         for d in details:
             if d['player'] == 'Empty Slot':
-                # Empty slot = 2.0
                 total += 2.0
             elif d['regular'] != '-' and d['regular'] is not None:
                 try:
                     val = float(d['regular']) + d['injury_adjustment']
-                    val = max(val, 2.0)  # Ensure at least 2
+                    val = max(val, 2.0)
                     total += val
                 except:
                     pass
@@ -458,12 +443,24 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     last14_trade_ratio = compute_ratio(team1_last14_total, team2_last14_total)
     last30_trade_ratio = compute_ratio(team1_last30_total, team2_last30_total)
 
+    # Dominant team belirleme
+    def dominant_team(a, b):
+        if a > b:
+            return f" / {team1_name}"
+        elif b > a:
+            return f" / {team2_name}"
+        else:
+            return ""
+
+    regular_dominant = dominant_team(team1_regular_total, team2_regular_total)
+    last14_dominant = dominant_team(team1_last14_total, team2_last14_total)
+    last30_dominant = dominant_team(team1_last30_total, team2_last30_total)
+
     # ------------------ Display Scores and Details ------------------
     col1, col2 = st.columns([1, 1])
 
     with col1:
         st.markdown(f"<h3 style='text-align: center;'>{team1_name} Total Score: {team1_total:.2f}</h3>", unsafe_allow_html=True)
-        # Show three situation totals below total score
         st.markdown(f"<h6 style='text-align: center;'>{team1_name} Regular Total: {team1_regular_total:.2f}</h6>", unsafe_allow_html=True)
         st.markdown(f"<h6 style='text-align: center;'>{team1_name} Last14 Total: {team1_last14_total:.2f}</h6>", unsafe_allow_html=True)
         st.markdown(f"<h6 style='text-align: center;'>{team1_name} Last30 Total: {team1_last30_total:.2f}</h6>", unsafe_allow_html=True)
@@ -495,7 +492,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     with col2:
         st.markdown(f"<h3 style='text-align: center;'>{team2_name} Total Score: {team2_total:.2f}</h3>", unsafe_allow_html=True)
-        # Show three situation totals below total score
         st.markdown(f"<h6 style='text-align: center;'>{team2_name} Regular Total: {team2_regular_total:.2f}</h6>", unsafe_allow_html=True)
         st.markdown(f"<h6 style='text-align: center;'>{team2_name} Last14 Total: {team2_last14_total:.2f}</h6>", unsafe_allow_html=True)
         st.markdown(f"<h6 style='text-align: center;'>{team2_name} Last30 Total: {team2_last30_total:.2f}</h6>", unsafe_allow_html=True)
@@ -526,27 +522,19 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                         )
 
     # ------------------ Display Ratios ------------------
-    # Regular, Last14, Last30 Ratios
-    # Not requested to reposition these, just show them after details if needed
-    # The user did not explicitly say to remove them from original place,
-    # but previously we were showing them above the main Trade Ratio. 
-    # Now we keep main Trade Ratio in the same place and the user said "Let Trade Ratios stay in the same places".
-    # We previously showed these ratios (Regular, Last14, Last30) above main trade ratio, we can show them here now before the main ratio.
+    # Üç küçük oranı h6 ile yazdırıyoruz:
+    st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}{regular_dominant} domalıyor</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}{last14_dominant} domalıyor</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}{last30_dominant} domalıyor</h6>", unsafe_allow_html=True)
 
-    # Display the three ratios (Regular, Last14, Last30) before the main trade ratio
-    st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
-    st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
-    st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}</h6>", unsafe_allow_html=True)
-
-    # Main Trade Ratio
+    # Ana Trade Ratio daha büyük yazı boyutunda (h2):
     st.markdown(f"<h2 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h2>", unsafe_allow_html=True)
 
-    # Determine Trade Approval
     if trade_ratio >= 0.80:
-        approval_message = "<h1 style='color: green; text-align: center;'>TRADE APPROVED</h1>"
+        approval_message = "<h3 style='color: green; text-align: center;'>TRADE APPROVED</h3>"
         trade_status_text = "TRADE APPROVED"
     else:
-        approval_message = "<h1 style='color: red; text-align: center;'>TRADE NOT APPROVED</h1>"
+        approval_message = "<h3 style='color: red; text-align: center;'>TRADE NOT APPROVED</h3>"
         trade_status_text = "TRADE NOT APPROVED"
     
     st.markdown(approval_message, unsafe_allow_html=True)
