@@ -446,11 +446,11 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     # Dominant team belirleme
     def dominant_team(a, b):
         if a > b:
-            return f" / {team1_name}"
+            return f" ({team1_name} is giving more)"
         elif b > a:
-            return f" / {team2_name}"
+            return f" ({team2_name} is giving more)"
         else:
-            return ""
+            return " (Equal)"  # Eşit olduğunda boş string yerine "Equal" döndür
 
     regular_dominant = dominant_team(team1_regular_total, team2_regular_total)
     last14_dominant = dominant_team(team1_last14_total, team2_last14_total)
@@ -523,18 +523,18 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     # ------------------ Display Ratios ------------------
     # Üç küçük oranı h6 ile yazdırıyoruz:
-    st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}{regular_dominant} domalıyor</h6>", unsafe_allow_html=True)
-    st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}{last14_dominant} domalıyor</h6>", unsafe_allow_html=True)
-    st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}{last30_dominant} domalıyor</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}{regular_dominant}</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}{last14_dominant}</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}{last30_dominant}</h6>", unsafe_allow_html=True)
 
     # Ana Trade Ratio daha büyük yazı boyutunda (h2):
     st.markdown(f"<h2 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h2>", unsafe_allow_html=True)
 
     if trade_ratio >= 0.80:
-        approval_message = "<h3 style='color: green; text-align: center;'>TRADE APPROVED</h3>"
+        approval_message = "<h2 style='color: green; text-align: center;'>TRADE APPROVED</h2>"
         trade_status_text = "TRADE APPROVED"
     else:
-        approval_message = "<h3 style='color: red; text-align: center;'>TRADE NOT APPROVED</h3>"
+        approval_message = "<h2 style='color: red; text-align: center;'>TRADE NOT APPROVED</h2>"
         trade_status_text = "TRADE NOT APPROVED"
     
     st.markdown(approval_message, unsafe_allow_html=True)
