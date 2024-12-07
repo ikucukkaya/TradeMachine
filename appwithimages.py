@@ -1082,7 +1082,7 @@ def main():
         st.warning("No GIFs found in the 'gifs' directory.")
 
     # Center the title
-    st.markdown("<h1 style='text-align: center;'>🏀 Trade Machine 🏀</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>Trade Machine</h1>", unsafe_allow_html=True)
 
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
