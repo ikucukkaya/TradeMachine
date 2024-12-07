@@ -1067,7 +1067,7 @@ def main():
         for gif_path in gif_files:
             data_url = get_base64_gif(gif_path)
             # GIF'leri aynı boyutta ve boşluksuz göstermek için HTML ve CSS kullanın
-            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" style="width:150px; height:150px; margin:0; padding:0; display:inline-block; object-fit:cover;">'
+            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" style="width:100px; height:100px; margin:0; padding:0; display:inline-block; object-fit:cover;">'
 
         # HTML bloğunu Streamlit içinde gösterin
         st.markdown(
