@@ -1312,7 +1312,7 @@ def main():
         # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.275, 1])
         with col_center[1]:
-            submitted = st.button("📈 Evaluate Trade")
+            submitted = st.button("Evaluate Trade")
 
         if submitted:
             # Check for duplicates
