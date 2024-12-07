@@ -27,10 +27,12 @@ player_scores_dir = os.path.join(current_dir, "TotalScore")  # New path
 gifs_dir = os.path.join(current_dir, "gifs")
 
 # GIF dosyalarını bulmak için `gifs` klasörünü kontrol edin
-gif_files = [os.path.join(gifs_dir, file) for file in os.listdir(gifs_dir) if file.endswith('.gif')]
-
+gif_files = sorted(
+    [os.path.join(gifs_dir, file) for file in os.listdir(gifs_dir) if file.endswith('.gif')],
+    key=lambda x: int(os.path.basename(x).split('.')[0])  # Sadece dosya adındaki numarayı sıralamak için
+)
 # Eğer 5'ten fazla GIF varsa sadece ilk 5'ini seçelim
-gif_files = gif_files[:6]
+gif_files = gif_files[:9]
 
 # GIF dosyalarını base64 formatına dönüştüren fonksiyon
 def get_base64_gif(gif_path):
@@ -1066,10 +1068,8 @@ def main():
         gif_html = ""
         for gif_path in gif_files:
             data_url = get_base64_gif(gif_path)
-            # GIF'leri aynı boyutta ve boşluksuz göstermek için HTML ve CSS kullanın
             gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" style="width:100px; height:100px; margin:0; padding:0; display:inline-block; object-fit:cover;">'
 
-        # HTML bloğunu Streamlit içinde gösterin
         st.markdown(
             f"""
             <div style="text-align:center; margin:0; padding:0; display:flex; justify-content:center; gap:0;">
@@ -1082,7 +1082,7 @@ def main():
         st.warning("No GIFs found in the 'gifs' directory.")
 
     # Center the title
-    st.markdown("<h1 style='text-align: center;'>Trade Machine</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'> Trade Machine     </h1>", unsafe_allow_html=True)
 
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
