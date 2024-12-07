@@ -31,8 +31,6 @@ gif_files = sorted(
     [os.path.join(gifs_dir, file) for file in os.listdir(gifs_dir) if file.endswith('.gif')],
     key=lambda x: int(os.path.basename(x).split('.')[0])  # Sadece dosya adındaki numarayı sıralamak için
 )
-# Eğer 5'ten fazla GIF varsa sadece ilk 5'ini seçelim
-gif_files = gif_files[:9]
 
 # GIF dosyalarını base64 formatına dönüştüren fonksiyon
 def get_base64_gif(gif_path):
