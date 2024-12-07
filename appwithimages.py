@@ -10,12 +10,10 @@ import streamlit.components.v1 as components  # type: ignore
 import glob
 from rapidfuzz import process, fuzz  # type: ignore
 import matplotlib.pyplot as plt
-
-# Import st_aggrid components
+import base64
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
 from st_aggrid.shared import GridUpdateMode  # type: ignore
 
-import base64
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
