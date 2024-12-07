@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
 from st_aggrid.shared import GridUpdateMode  # type: ignore
 
+import base64
+
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_dir, "data")
@@ -22,6 +24,21 @@ image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
 yahoo_dir = os.path.join(current_dir, "yahoo")  # Yahoo folder
 player_scores_dir = os.path.join(current_dir, "TotalScore")  # New path
+gifs_dir = os.path.join(current_dir, "gifs")
+
+# GIF dosyalarını bulmak için `gifs` klasörünü kontrol edin
+gif_files = [os.path.join(gifs_dir, file) for file in os.listdir(gifs_dir) if file.endswith('.gif')]
+
+# Eğer 5'ten fazla GIF varsa sadece ilk 5'ini seçelim
+gif_files = gif_files[:6]
+
+# GIF dosyalarını base64 formatına dönüştüren fonksiyon
+def get_base64_gif(gif_path):
+    with open(gif_path, "rb") as file:
+        contents = file.read()
+        data_url = base64.b64encode(contents).decode("utf-8")
+    return data_url
+
 
 # ----------------------- Utility Functions -----------------------
 
@@ -1044,6 +1061,25 @@ def load_player_scores(directory_path):
 def main():
     # Set Streamlit page configuration
     st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
+    
+    if gif_files:
+        gif_html = ""
+        for gif_path in gif_files:
+            data_url = get_base64_gif(gif_path)
+            # GIF'leri aynı boyutta ve boşluksuz göstermek için HTML ve CSS kullanın
+            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" style="width:150px; height:150px; margin:0; padding:0; display:inline-block; object-fit:cover;">'
+
+        # HTML bloğunu Streamlit içinde gösterin
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin:0; padding:0; display:flex; justify-content:center; gap:0;">
+                {gif_html}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.warning("No GIFs found in the 'gifs' directory.")
 
     # Center the title
     st.markdown("<h1 style='text-align: center;'>🏀 Trade Machine 🏀</h1>", unsafe_allow_html=True)
