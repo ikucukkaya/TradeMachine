@@ -1080,7 +1080,14 @@ def main():
         st.warning("No GIFs found in the 'gifs' directory.")
 
     # Center the title
-    st.markdown("<h1 style='text-align: center;'> Trade Machine </h1>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="text-align: center; font-size: 60px; font-weight: bold; margin-bottom: 20px;">
+            Trade Machine
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
@@ -1177,8 +1184,14 @@ def main():
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
         # ------------------- Team Selection -------------------
-        st.markdown("<h3 style='text-align: center;'>Trade Evaluation</h3>", unsafe_allow_html=True)
-        
+        st.markdown(
+        """
+        <div style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px;">
+            Trade Evaluation
+        </div>
+        """,
+        unsafe_allow_html=True
+    )        
         # Get list of unique fantasy teams excluding 'Free Agent'
         unique_teams = data['Takım'].unique().tolist()
         unique_teams = [team for team in unique_teams if team != 'Free Agent']
