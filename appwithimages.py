@@ -1082,7 +1082,7 @@ def main():
     # Center the title
     st.markdown(
         """
-        <div style="text-align: center; font-size: 60px; font-weight: bold; margin-bottom: 20px;">
+        <div style="text-align: center; font-size: 48px; font-weight: bold; margin-bottom: 20px;">
             Trade Machine
         </div>
         """,
