@@ -1061,10 +1061,30 @@ def main():
     st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
     
     if gif_files:
+        # CSS for responsive GIFs
+        st.markdown(
+            """
+            <style>
+            .responsive-gif {
+                width: 100px;  /* Masaüstü genişliği */
+                height: 100px; /* Masaüstü yüksekliği */
+                object-fit: cover;
+            }
+            @media screen and (max-width: 768px) {
+                .responsive-gif {
+                    width: 40px;  /* Mobil genişliği */
+                    height: 40px; /* Mobil yüksekliği */
+                }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        
         gif_html = ""
         for gif_path in gif_files:
             data_url = get_base64_gif(gif_path)
-            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" style="width:100px; height:100px; margin:0; padding:0; display:inline-block; object-fit:cover;">'
+            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" class="responsive-gif" style="margin:0; padding:0; display:inline-block;">'
 
         st.markdown(
             f"""
@@ -1085,7 +1105,7 @@ def main():
         </div>
         """,
         unsafe_allow_html=True
-    )
+    )    
 
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
