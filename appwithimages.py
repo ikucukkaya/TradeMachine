@@ -1186,7 +1186,7 @@ def main():
         # ------------------- Team Selection -------------------
         st.markdown(
         """
-        <div style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px;">
+        <div style="text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 20px;">
             Trade Evaluation
         </div>
         """,
