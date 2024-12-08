@@ -1059,28 +1059,54 @@ def load_player_scores(directory_path):
 def main():
     # Set Streamlit page configuration
     st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
-    
+
     if gif_files:
-        # CSS for responsive GIFs
+        # CSS for responsive GIFs and title
         st.markdown(
             """
             <style>
             .responsive-gif {
-                width: 100px;  /* Masaüstü genişliği */
-                height: 100px; /* Masaüstü yüksekliği */
+                width: 10vw;  /* Genişliğin %10'u */
+                height: auto; /* Yükseklik oranla ayarlanır */
+                max-width: 100px; /* Masaüstü için maksimum boyut */
                 object-fit: cover;
             }
+
             @media screen and (max-width: 768px) {
                 .responsive-gif {
-                    width: 40px;  /* Mobil genişliği */
-                    height: 40px; /* Mobil yüksekliği */
+                    max-width: 50px;  /* Mobilde maksimum 50px */
+                }
+            }
+
+            .responsive-title {
+                font-size: 72px; /* Masaüstü için büyük yazı boyutu */
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            @media screen and (max-width: 768px) {
+                .responsive-title {
+                    font-size: 48px; /* Tablet ve büyük telefonlar için */
+                }
+            }
+
+            @media screen and (max-width: 480px) {
+                .responsive-title {
+                    font-size: 36px; /* Orta boy telefonlar için */
+                }
+            }
+
+            @media screen and (max-width: 320px) {
+                .responsive-title {
+                    font-size: 20px; /* Küçük telefonlar için */
                 }
             }
             </style>
             """,
             unsafe_allow_html=True,
         )
-        
+
         gif_html = ""
         for gif_path in gif_files:
             data_url = get_base64_gif(gif_path)
@@ -1097,16 +1123,15 @@ def main():
     else:
         st.warning("No GIFs found in the 'gifs' directory.")
 
-    # Center the title
+    # Center the title with responsive styling
     st.markdown(
         """
-        <div style="text-align: center; font-size: 48px; font-weight: bold; margin-bottom: 20px;">
+        <div class="responsive-title">
             Trade Machine
         </div>
         """,
         unsafe_allow_html=True
-    )    
-
+    )
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
     injury_report_path = os.path.join(data_dir, "nba-injury-report.xlsx")
