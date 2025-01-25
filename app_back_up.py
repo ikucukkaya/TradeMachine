@@ -10,10 +10,10 @@ import streamlit.components.v1 as components  # type: ignore
 import glob
 from rapidfuzz import process, fuzz  # type: ignore
 import matplotlib.pyplot as plt
-
-# Import st_aggrid components
+import base64
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
 from st_aggrid.shared import GridUpdateMode  # type: ignore
+
 
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +22,21 @@ image_dir = os.path.join(current_dir, "player_images")
 placeholder_image_path = os.path.join(current_dir, "placeholder.jpg")
 yahoo_dir = os.path.join(current_dir, "yahoo")  # Yahoo folder
 player_scores_dir = os.path.join(current_dir, "TotalScore")  # New path
+gifs_dir = os.path.join(current_dir, "gifs")
+
+# GIF dosyalarını bulmak için `gifs` klasörünü kontrol edin
+gif_files = sorted(
+    [os.path.join(gifs_dir, file) for file in os.listdir(gifs_dir) if file.endswith('.gif')],
+    key=lambda x: int(os.path.basename(x).split('.')[0])  # Sadece dosya adındaki numarayı sıralamak için
+)
+
+# GIF dosyalarını base64 formatına dönüştüren fonksiyon
+def get_base64_gif(gif_path):
+    with open(gif_path, "rb") as file:
+        contents = file.read()
+        data_url = base64.b64encode(contents).decode("utf-8")
+    return data_url
+
 
 # ----------------------- Utility Functions -----------------------
 
@@ -1045,9 +1060,78 @@ def main():
     # Set Streamlit page configuration
     st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
 
-    # Center the title
-    st.markdown("<h1 style='text-align: center;'>🏀 Trade Machine 🏀</h1>", unsafe_allow_html=True)
+    if gif_files:
+        # CSS for responsive GIFs and title
+        st.markdown(
+            """
+            <style>
+            .responsive-gif {
+                width: 10vw;  /* Genişliğin %10'u */
+                height: auto; /* Yükseklik oranla ayarlanır */
+                max-width: 100px; /* Masaüstü için maksimum boyut */
+                object-fit: cover;
+            }
 
+            @media screen and (max-width: 768px) {
+                .responsive-gif {
+                    max-width: 50px;  /* Mobilde maksimum 50px */
+                }
+            }
+
+            .responsive-title {
+                font-size: 72px; /* Masaüstü için büyük yazı boyutu */
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            @media screen and (max-width: 768px) {
+                .responsive-title {
+                    font-size: 48px; /* Tablet ve büyük telefonlar için */
+                }
+            }
+
+            @media screen and (max-width: 480px) {
+                .responsive-title {
+                    font-size: 36px; /* Orta boy telefonlar için */
+                }
+            }
+
+            @media screen and (max-width: 320px) {
+                .responsive-title {
+                    font-size: 20px; /* Küçük telefonlar için */
+                }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        gif_html = ""
+        for gif_path in gif_files:
+            data_url = get_base64_gif(gif_path)
+            gif_html += f'<img src="data:image/gif;base64,{data_url}" alt="GIF" class="responsive-gif" style="margin:0; padding:0; display:inline-block;">'
+
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin:0; padding:0; display:flex; justify-content:center; gap:0;">
+                {gif_html}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.warning("No GIFs found in the 'gifs' directory.")
+
+    # Center the title with responsive styling
+    st.markdown(
+        """
+        <div class="responsive-title">
+            Trade Machine
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # ------------------- Load Data -------------------
     merged_scores_path = os.path.join(data_dir, "merged_scores.xlsx")
     injury_report_path = os.path.join(data_dir, "nba-injury-report.xlsx")
@@ -1143,7 +1227,6 @@ def main():
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
         # ------------------- Team Selection -------------------
-        st.markdown("<h3 style='text-align: center;'>Trade Evaluation</h3>", unsafe_allow_html=True)
         
         # Get list of unique fantasy teams excluding 'Free Agent'
         unique_teams = data['Takım'].unique().tolist()
@@ -1272,7 +1355,7 @@ def main():
         # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.275, 1])
         with col_center[1]:
-            submitted = st.button("📈 Evaluate Trade")
+            submitted = st.button("Evaluate Trade")
 
         if submitted:
             # Check for duplicates
@@ -1300,7 +1383,6 @@ def main():
 
      # ------------------- Player Scores Analysis Tab -------------------
     with tab2:
-        st.markdown("<h3 style='text-align: center;'>📈 Player Scores Analysis</h3>", unsafe_allow_html=True)
 
         # Load Player Scores Data
         try:
@@ -1345,7 +1427,6 @@ def main():
 
     # ------------------- Team Scores Analysis Tab -------------------
     with tab3:
-        st.markdown("<h3 style='text-align: center;'>📈 Team Scores Analysis</h3>", unsafe_allow_html=True)
 
         # Load Player Scores Data
         try:
