@@ -1452,11 +1452,11 @@ def main():
         try:
             # Read data from the Google Sheet
             df = pd.read_csv(public_sheet_url)
-
+        
             # Display the DataFrame
             st.write("Google Sheet Data:")
             st.dataframe(df)
-
+        
             # Optional: Display data as a chart (example)
             if not df.empty:
                 st.bar_chart(df.iloc[:, 1:])
