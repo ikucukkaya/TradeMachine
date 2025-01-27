@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import base64
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
 from st_aggrid.shared import GridUpdateMode  # type: ignore
+import streamlit.components.v1 as components
+from streamlit_gsheets import GSheetsConnection
 
 
 # ----------------------- Paths Configuration -----------------------
@@ -1177,7 +1179,7 @@ def main():
         st.error(data_load_status)
 
     # ------------------- Tabs -------------------
-    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Scores Analysis", "Team Scores Analysis"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Trade Evaluation", "Player Scores Analysis", "Team Scores Analysis", "Nerede Yedin Paraları Söyle"])
 
     # -------------- TRADE EVALUATION TAB --------------
     with tab1:
@@ -1441,6 +1443,25 @@ def main():
                     plt.tight_layout()
                     st.pyplot(fig)
 
+    with tab4:
+        st.markdown("### Google Sheet Data")
+
+        # Public Google Sheet URL
+        public_sheet_url = "https://docs.google.com/spreadsheets/d/1p-LHBP4TZZUPnMUERa85Nu-wLliKL8F9_0_VZ6-5asE/export?format=csv"
+
+        try:
+            # Read data from the Google Sheet
+            df = pd.read_csv(public_sheet_url)
+
+            # Display the DataFrame
+            st.write("Google Sheet Data:")
+            st.dataframe(df)
+
+            # Optional: Display data as a chart (example)
+            if not df.empty:
+                st.bar_chart(df.iloc[:, 1:])
+        except Exception as e:
+            st.error(f"Failed to load Google Sheet data: {e}")
 
 # ----------------------- Run the Application -----------------------
 if __name__ == "__main__":
