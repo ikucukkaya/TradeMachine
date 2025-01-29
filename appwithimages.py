@@ -1196,10 +1196,10 @@ def main():
     # ------------------- Tabs -------------------
     # ------------------- Tabs -------------------
     tab1, tab2, tab3, tab4 = st.tabs([
-        "Trade Evaluation", 
+        "Trade Evaluation",
+        "Parasal Durum",
         "Player Scores Analysis", 
-        "Team Scores Analysis",
-        "Parasal Durum"  # New Tab Added
+        "Team Scores Analysis"
     ])
     # -------------- TRADE EVALUATION TAB --------------
     with tab1:
@@ -1346,8 +1346,23 @@ def main():
                         num_top_players
                     )
 
-    # -------------- PLAYER SCORES ANALYSIS TAB --------------
+# -------------- PARASAL DURUM TAB --------------
+    
     with tab2:
+        st.header("Parasal Durum")
+        
+        # Load the Parasal Durum data
+        df_parasal = load_parasal_durum_data()
+        
+        if not df_parasal.empty:
+            # Display the data using Streamlit's native dataframe component
+            st.dataframe(df_parasal)
+        else:
+            st.info("No data available for Parasal Durum.")
+
+# -------------- PLAYER SCORES ANALYSIS TAB --------------
+    
+    with tab3:
         try:
             player_scores = load_player_scores(player_scores_dir)
         except ValueError as ve:
@@ -1382,7 +1397,7 @@ def main():
                 st.pyplot(fig)
 
     # -------------- TEAM SCORES ANALYSIS TAB --------------
-    with tab3:
+    with tab4:
         try:
             player_scores = load_player_scores(player_scores_dir)
         except ValueError as ve:
@@ -1462,21 +1477,7 @@ def main():
                     plt.xticks(rotation=45)
                     plt.tight_layout()
                     st.pyplot(fig)
-
-    # -------------- PARASAL DURUM TAB --------------
     
-    with tab4:
-        st.header("Parasal Durum")
-        
-        # Load the Parasal Durum data
-        df_parasal = load_parasal_durum_data()
-        
-        if not df_parasal.empty:
-            # Display the data using Streamlit's native dataframe component
-            st.dataframe(df_parasal)
-        else:
-            st.info("No data available for Parasal Durum.")
-
 # ----------------------- Run the Application -----------------------
 if __name__ == "__main__":
     main()
