@@ -807,6 +807,23 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
 # ----------------------- Load Data Functions -----------------------
 @st.cache_data
+def load_parasal_durum_data():
+    """
+    Loads and processes the Parasal_Durum.xlsx data.
+    """
+    parasal_durum_path = os.path.join(data_dir, "Parasal_Durum.xlsx")
+    try:
+        df_parasal = pd.read_excel(parasal_durum_path)
+        
+        # Optional: Add any necessary data processing here
+        # For example, renaming columns, handling missing values, etc.
+        
+        return df_parasal
+    except Exception as e:
+        st.error(f"Failed to load Parasal_Durum data: {e}")
+        return pd.DataFrame()
+
+@st.cache_data
 def load_regular_season_data():
     """
     Loads and processes regular season data.
@@ -1177,8 +1194,13 @@ def main():
         st.error(data_load_status)
 
     # ------------------- Tabs -------------------
-    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Scores Analysis", "Team Scores Analysis"])
-
+    # ------------------- Tabs -------------------
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Trade Evaluation", 
+        "Player Scores Analysis", 
+        "Team Scores Analysis",
+        "Parasal Durum"  # New Tab Added
+    ])
     # -------------- TRADE EVALUATION TAB --------------
     with tab1:
         unique_teams = data['Takım'].unique().tolist()
@@ -1441,6 +1463,19 @@ def main():
                     plt.tight_layout()
                     st.pyplot(fig)
 
+    # -------------- PARASAL DURUM TAB --------------
+    
+    with tab4:
+        st.header("Parasal Durum")
+        
+        # Load the Parasal Durum data
+        df_parasal = load_parasal_durum_data()
+        
+        if not df_parasal.empty:
+            # Display the data using Streamlit's native dataframe component
+            st.dataframe(df_parasal)
+        else:
+            st.info("No data available for Parasal Durum.")
 
 # ----------------------- Run the Application -----------------------
 if __name__ == "__main__":
