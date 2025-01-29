@@ -1349,7 +1349,7 @@ def main():
 # -------------- PARASAL DURUM TAB --------------
     
     with tab2:
-        st.header("Parasal Durum")
+        #st.header("Parasal Durum")
         
         # Load the Parasal Durum data
         df_parasal = load_parasal_durum_data()
