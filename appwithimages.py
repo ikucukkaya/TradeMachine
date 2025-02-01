@@ -14,7 +14,6 @@ import base64
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # type: ignore
 from st_aggrid.shared import GridUpdateMode  # type: ignore
 
-
 # ----------------------- Paths Configuration -----------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_dir, "data")
@@ -396,7 +395,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         empty_slots_info = f"{team2_name} receives {empty_slots} empty slot(s) with SCORE: 2.00 each."
         st.markdown(f"<div style='text-align: center;'><strong>{empty_slots_info}</strong></div>", unsafe_allow_html=True)
 
-
     # Validate trade
     if team1_total == 0 or team2_total == 0:
         st.warning("Both teams must have at least one player.")
@@ -479,7 +477,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         elif b > a:
             return f" ({team2_name} is giving more)"
         else:
-            return " (Equal)"  # Eşit olduğunda boş string yerine "Equal" döndür
+            return " (Equal)"  # Eşit olduğunda
 
     regular_dominant = dominant_team(team1_regular_total, team2_regular_total)
     last14_dominant = dominant_team(team1_last14_total, team2_last14_total)
@@ -551,12 +549,9 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                         )
 
     # ------------------ Display Ratios ------------------
-    # Üç küçük oranı h6 ile yazdırıyoruz:
     st.markdown(f"<h6 style='text-align: center;'>Regular Trade Ratio = {regular_trade_ratio:.2f}{regular_dominant}</h6>", unsafe_allow_html=True)
     st.markdown(f"<h6 style='text-align: center;'>Last14 Trade Ratio = {last14_trade_ratio:.2f}{last14_dominant}</h6>", unsafe_allow_html=True)
     st.markdown(f"<h6 style='text-align: center;'>Last30 Trade Ratio = {last30_trade_ratio:.2f}{last30_dominant}</h6>", unsafe_allow_html=True)
-
-    # Ana Trade Ratio daha büyük yazı boyutunda (h2):
     st.markdown(f"<h2 style='text-align: center;'>Trade Ratio: {trade_ratio:.2f}</h2>", unsafe_allow_html=True)
 
     if trade_ratio >= 0.80:
@@ -603,9 +598,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     display_whatsapp_share_button(share_message)
 
-    # Takım ortalamaları vb. diğer kısımlar için ek kod değişikliğine gerek yok.
     # ------------------- Team Averages Calculation -------------------
-
     # Create a mapping from Player_Name to Player_Name_Normalized
     player_name_to_normalized = data.set_index('Player_Name')['Player_Name_Normalized'].to_dict()
 
@@ -652,7 +645,7 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team2_avg_before_last30 = calculate_team_averages(df_last30, team2_players_current_normalized, num_top_players)
     team2_avg_after_last30 = calculate_team_averages(df_last30, team2_players_after_normalized, num_top_players)
 
-# ------------------- Display Team Averages -------------------
+    # ------------------- Display Team Averages -------------------
 
     st.markdown("<h3 style='text-align: center;'>Team Averages Before and After Trade</h3>", unsafe_allow_html=True)
 
@@ -660,12 +653,12 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     def create_avg_dataframe(team_name, avg_before, avg_after):
         # Create DataFrame with numerical values
-        data = {
+        data_dict = {
             'Category': categories,
             'Before Trade': [avg_before.get(cat, 0) for cat in categories],
             'After Trade': [avg_after.get(cat, 0) for cat in categories],
         }
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(data_dict)
         
         # Round 'Before Trade' and 'After Trade' to match displayed precision
         def round_value(value, category):
@@ -705,19 +698,18 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 for col in row.index:
                     val = float(row[col])
                     if val == 0:
-                        color = ''  # No coloring if difference is zero
+                        color = ''
                     else:
                         if col == 'TO':
-                            # Invert logic for 'TO'
                             if val > 0:
-                                color = 'salmon'      # Increased TO is bad (red)
+                                color = 'salmon'
                             elif val < 0:
-                                color = 'lightgreen'  # Decreased TO is good (green)
+                                color = 'lightgreen'
                         else:
                             if val > 0:
-                                color = 'lightgreen'  # Improvement (green)
+                                color = 'lightgreen'
                             elif val < 0:
-                                color = 'salmon'      # Decline (red)
+                                color = 'salmon'
                     styles.append(f'background-color: {color}')
                 return styles
         styled_df = formatted_df.style.apply(highlight_diff_row, axis=1)
@@ -793,18 +785,9 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
 
     # ------------------- Prepare Share Message and Display WhatsApp Button -------------------
 
-    # Prepare the team averages data for sharing
     def df_to_text(df, team_name, title):
         """
         Converts the DataFrame to a formatted text table for sharing.
-
-        Parameters:
-        - df: DataFrame containing the team averages (transposed)
-        - team_name: Name of the team
-        - title: Title for the table (e.g., "Regular Season Averages")
-
-        Returns:
-        - A string representing the formatted table
         """
         lines = []
         lines.append(f"{team_name} - {title}")
@@ -816,7 +799,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
             after = df.at['After Trade', category]
             diff = df.at['Diff', category]
 
-            # Format values with appropriate decimal places
             if category in ['FG%', 'FT%']:
                 before_formatted = f"{float(before):.3f}"
                 after_formatted = f"{float(after):.3f}"
@@ -826,14 +808,12 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
                 after_formatted = f"{float(after):.2f}"
                 diff_formatted = f"{float(diff):+0.2f}"
 
-            # Format the line with alignment
             line = f"{category:<8} | {before_formatted:>8} | {after_formatted:>8} | {diff_formatted:>8}"
             lines.append(line)
 
         table_text = "\n".join(lines)
         return table_text
 
-    # Generate text representations of the tables
     team1_regular_avg_text = df_to_text(df_team1_regular, team1_name, "Regular Season Averages")
     team2_regular_avg_text = df_to_text(df_team2_regular, team2_name, "Regular Season Averages")
     team1_projection_avg_text = df_to_text(df_team1_projection, team1_name, "Rest of Season Projections")
@@ -843,7 +823,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
     team1_last30_avg_text = df_to_text(df_team1_last30, team1_name, "Last 30 Days Averages")
     team2_last30_avg_text = df_to_text(df_team2_last30, team2_name, "Last 30 Days Averages")
 
-    # Create share message including the team averages
     share_message = (
         f"--- {team1_name} Player Details ---\n{team1_details_text}\n\n"
         f"--- {team2_name} Player Details ---\n{team2_details_text}\n\n"
@@ -858,7 +837,6 @@ def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments,
         f"{team2_last30_avg_text}\n"
     )
 
-    # Display WhatsApp share button
     display_whatsapp_share_button(share_message)
 
 # ----------------------- Load Data Functions -----------------------
@@ -871,7 +849,6 @@ def load_regular_season_data():
     regular_season_path = os.path.join(data_dir, "2024-25_NBA_Regular_Season_Updated_daily.xlsx")
     try:
         df_regular_season = pd.read_excel(regular_season_path)
-        # Select required columns including 'R#'
         required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
         missing_cols = set(required_columns) - set(df_regular_season.columns)
         if missing_cols:
@@ -879,20 +856,15 @@ def load_regular_season_data():
             df_regular_season = pd.DataFrame()
         else:
             df_regular_season = df_regular_season[required_columns].copy()
-            # Rename 'PLAYER' to 'Player_Name'
             df_regular_season = df_regular_season.rename(columns={'PLAYER': 'Player_Name'})
-            # Ensure numerical columns are float, except for FGA and FTA which are strings
             numerical_cols = ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'R#']
             for col in numerical_cols:
                 df_regular_season[col] = pd.to_numeric(df_regular_season[col], errors='coerce')
-            # Remove existing 'Rank' column if present
             if 'Rank' in df_regular_season.columns:
                 df_regular_season.drop(columns=['Rank'], inplace=True)
-            # Reset index and rename 'index' to 'Rank'
             df_regular_season.reset_index(inplace=True)
             df_regular_season.rename(columns={'index': 'Rank'}, inplace=True)
             df_regular_season['Rank'] = df_regular_season['Rank'] + 1
-            # Reorder columns to have 'Rank' first
             columns_order = ['Rank', 'R#', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
             df_regular_season = df_regular_season[columns_order]
         return df_regular_season
@@ -908,7 +880,6 @@ def load_rest_of_season_data():
     rest_of_season_path = os.path.join(data_dir, "2024-25_Rest_of_Season_Rankings_Projections_updated_daily.xlsx")
     try:
         df_rest_of_season = pd.read_excel(rest_of_season_path)
-        # Select required columns including 'R#'
         required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
         missing_cols = set(required_columns) - set(df_rest_of_season.columns)
         if missing_cols:
@@ -916,20 +887,15 @@ def load_rest_of_season_data():
             df_rest_of_season = pd.DataFrame()
         else:
             df_rest_of_season = df_rest_of_season[required_columns].copy()
-            # Rename 'PLAYER' to 'Player_Name'
             df_rest_of_season = df_rest_of_season.rename(columns={'PLAYER': 'Player_Name'})
-            # Ensure numerical columns are float, except for FGA and FTA which are strings
             numerical_cols = ['3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'R#']
             for col in numerical_cols:
                 df_rest_of_season[col] = pd.to_numeric(df_rest_of_season[col], errors='coerce')
-            # Remove existing 'Rank' column if present
             if 'Rank' in df_rest_of_season.columns:
                 df_rest_of_season.drop(columns=['Rank'], inplace=True)
-            # Reset index and rename 'index' to 'Rank'
             df_rest_of_season.reset_index(inplace=True)
             df_rest_of_season.rename(columns={'index': 'Rank'}, inplace=True)
             df_rest_of_season['Rank'] = df_rest_of_season['Rank'] + 1
-            # Reorder columns to have 'Rank' first
             columns_order = ['Rank', 'R#', 'Player_Name', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
             df_rest_of_season = df_rest_of_season[columns_order]
         return df_rest_of_season
@@ -945,7 +911,6 @@ def load_last14_data():
     last14_path = os.path.join(data_dir, "Last_14_days_of_the_2024-25_NBA_Regular_Season_Updated_daily.xlsx")
     try:
         df_last14 = pd.read_excel(last14_path)
-        # Process similar to regular season data
         required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
         df_last14 = df_last14[required_columns].copy()
         df_last14 = df_last14.rename(columns={'PLAYER': 'Player_Name'})
@@ -966,7 +931,6 @@ def load_last30_data():
     last30_path = os.path.join(data_dir, "Last_30_days_of_the_2024-25_NBA_Regular_Season_Updated_daily.xlsx")
     try:
         df_last30 = pd.read_excel(last30_path)
-        # Process similar to regular season data
         required_columns = ['PLAYER', 'R#', 'FG%', 'FT%', '3PM', 'PTS', 'TREB', 'AST', 'STL', 'BLK', 'TO', 'FGA', 'FTA']
         df_last30 = df_last30[required_columns].copy()
         df_last30 = df_last30.rename(columns={'PLAYER': 'Player_Name'})
@@ -994,19 +958,16 @@ def load_team_rosters(yahoo_dir):
     for file in roster_files:
         try:
             df = pd.read_excel(file)
-            # Ensure required columns are present
             if set(['Oyuncu Adı', 'Pozisyon']).issubset(df.columns):
-                # Extract team name from filename
                 filename = os.path.splitext(os.path.basename(file))[0]
-                team_name = filename  # Assuming filename is the team name
-                df['Takım'] = team_name  # Assign team name to 'Takım' column
+                team_name = filename
+                df['Takım'] = team_name
                 team_rosters = pd.concat([team_rosters, df], ignore_index=True)
             else:
                 st.error(f"File {file} is missing required columns ('Oyuncu Adı', 'Pozisyon').")
         except Exception as e:
             st.error(f"Failed to read {file}: {e}")
 
-    # Normalize player names for consistency
     team_rosters['Player_Name_Normalized'] = team_rosters['Oyuncu Adı'].apply(normalize_player_name)
     return team_rosters
 
@@ -1020,7 +981,6 @@ def load_player_scores(directory_path):
     all_data = []
     date_pattern = r'Player_Scores_(\d{2}_\d{2}_\d{4})\.xlsx'
     
-    # Find all Excel files matching the pattern
     file_path = os.path.join(directory_path, 'Player_Scores_*.xlsx')
     
     for file in glob.glob(file_path):
@@ -1028,7 +988,7 @@ def load_player_scores(directory_path):
             filename = os.path.basename(file)
             match = re.search(date_pattern, filename)
             if match:
-                date_str = match.group(1)  # '02_11_2024'
+                date_str = match.group(1)
                 date = pd.to_datetime(date_str, format='%d_%m_%Y', errors='coerce')
                 if pd.isna(date):
                     print(f"Invalid date format: {filename}")
@@ -1037,16 +997,12 @@ def load_player_scores(directory_path):
                 print(f"No date information found: {filename}")
                 continue
             
-            # Read Excel file
             df = pd.read_excel(file, engine='openpyxl')
-            
-            # Check for required columns
             required_columns = ['Player_Name', 'Regular', 'Projection']
             if not set(required_columns).issubset(df.columns):
                 print(f"Missing required columns: {filename}")
                 continue
             
-            # Select only required columns and add date
             df = df[required_columns].copy()
             df['Date'] = date
             all_data.append(df)
@@ -1057,10 +1013,7 @@ def load_player_scores(directory_path):
     if not all_data:
         raise ValueError("No Excel files could be loaded. Please check the file path and formats.")
     
-    # Combine all data
     combined_df = pd.concat(all_data, ignore_index=True)
-    
-    # Clean data
     combined_df = combined_df.dropna(subset=['Player_Name', 'Regular', 'Projection', 'Date'])
     combined_df['Regular'] = pd.to_numeric(combined_df['Regular'], errors='coerce')
     combined_df['Projection'] = pd.to_numeric(combined_df['Projection'], errors='coerce')
@@ -1071,49 +1024,42 @@ def load_player_scores(directory_path):
 # ----------------------- Main Application -----------------------
 
 def main():
-    # Set Streamlit page configuration
     st.set_page_config(page_title="🏀 Trade Machine 🏀", layout="wide")
 
     if gif_files:
-        # CSS for responsive GIFs and title
         st.markdown(
             """
             <style>
             .responsive-gif {
-                width: 10vw;  /* Genişliğin %10'u */
-                height: auto; /* Yükseklik oranla ayarlanır */
-                max-width: 100px; /* Masaüstü için maksimum boyut */
+                width: 10vw;
+                height: auto;
+                max-width: 100px;
                 object-fit: cover;
             }
-
             @media screen and (max-width: 768px) {
                 .responsive-gif {
-                    max-width: 50px;  /* Mobilde maksimum 50px */
+                    max-width: 50px;
                 }
             }
-
             .responsive-title {
-                font-size: 72px; /* Masaüstü için büyük yazı boyutu */
+                font-size: 72px;
                 font-weight: bold;
                 text-align: center;
                 margin-bottom: 20px;
             }
-
             @media screen and (max-width: 768px) {
                 .responsive-title {
-                    font-size: 48px; /* Tablet ve büyük telefonlar için */
+                    font-size: 48px;
                 }
             }
-
             @media screen and (max-width: 480px) {
                 .responsive-title {
-                    font-size: 36px; /* Orta boy telefonlar için */
+                    font-size: 36px;
                 }
             }
-
             @media screen and (max-width: 320px) {
                 .responsive-title {
-                    font-size: 20px; /* Küçük telefonlar için */
+                    font-size: 20px;
                 }
             }
             </style>
@@ -1137,7 +1083,6 @@ def main():
     else:
         st.warning("No GIFs found in the 'gifs' directory.")
 
-    # Center the title with responsive styling
     st.markdown(
         """
         <div class="responsive-title">
@@ -1168,64 +1113,45 @@ def main():
     if os.path.exists(yahoo_dir):
         team_rosters = load_team_rosters(yahoo_dir)
         if not team_rosters.empty:
-            # Normalize player names in merged_df for matching
             data['Player_Name_Normalized'] = data['Player_Name'].apply(normalize_player_name)
-
-            # Get list of normalized database player names
             db_player_names = data['Player_Name_Normalized'].tolist()
-
-            # Perform fuzzy matching
             mapping, unmatched = map_yahoo_to_db_players(team_rosters, db_player_names, threshold=80)
-
-            # Add a new column to team_rosters with matched DB player names
             team_rosters['DB_Player_Name'] = team_rosters['Player_Name_Normalized'].map(mapping)
-
-            # Handle unmatched players
             if unmatched:
                 st.warning(f"{len(unmatched)} player(s) could not be matched to the database. They will be excluded from trade evaluations.")
                 team_rosters = team_rosters[team_rosters['DB_Player_Name'].notna()]
-
-            # Merge team rosters with player data using DB_Player_Name
             data = pd.merge(data, team_rosters[['DB_Player_Name', 'Takım']], left_on='Player_Name_Normalized', right_on='DB_Player_Name', how='left')
-            data['Takım'] = data['Takım'].fillna('Free Agent')  # Assign 'Free Agent' to players not on any team
+            data['Takım'] = data['Takım'].fillna('Free Agent')
         else:
             st.error("Please check the 'yahoo' folder.")
     else:
         st.error(f"Yahoo directory not found at {yahoo_dir}. Please ensure the directory exists and contains the roster files.")
         data = None
 
-    # ------------------- Load Regular Season and Projection Data -------------------
     df_regular_season = load_regular_season_data()
     df_rest_of_season = load_rest_of_season_data()
-
-    # Load Last14 and Last30 data
     df_last14 = load_last14_data()
     df_last30 = load_last30_data()
 
-    # Normalize player names in regular season and projection data
     df_regular_season['Player_Name_Normalized'] = df_regular_season['Player_Name'].apply(normalize_player_name)
     df_rest_of_season['Player_Name_Normalized'] = df_rest_of_season['Player_Name'].apply(normalize_player_name)
     df_last14['Player_Name_Normalized'] = df_last14['Player_Name'].apply(normalize_player_name)
     df_last30['Player_Name_Normalized'] = df_last30['Player_Name'].apply(normalize_player_name)
 
-    # Merge 'Takım' column into regular season and projection data
     df_regular_season = pd.merge(df_regular_season, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
     df_rest_of_season = pd.merge(df_rest_of_season, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
     df_last14 = pd.merge(df_last14, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
     df_last30 = pd.merge(df_last30, data[['Player_Name_Normalized', 'Takım']], on='Player_Name_Normalized', how='left')
 
-    # ------------------- Display Data Information under the heading -------------------
     if 'last_updated' in st.session_state:
         last_updated = st.session_state['last_updated']
         st.markdown(
-            f"<p style='text-align: right; font-style: italic;'>Last Updated: "
-            f"<span style='color: green;'>{last_updated} UTC</span></p>",
+            f"<p style='text-align: right; font-style: italic;'>Last Updated: <span style='color: green;'>{last_updated} UTC</span></p>",
             unsafe_allow_html=True
         )
     else:
         st.markdown(
-            f"<p style='text-align: center; font-style: italic;'>Last Updated: "
-            f"<span style='color: red;'>Not Available</span></p>",
+            f"<p style='text-align: center; font-style: italic;'>Last Updated: <span style='color: red;'>Not Available</span></p>",
             unsafe_allow_html=True
         )
     if data_load_status != "Data loaded successfully.":
@@ -1243,12 +1169,8 @@ def main():
         "Team Scores Analysis"
     ])
     
-
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
-        # ------------------- Team Selection -------------------
-        
-        # Get list of unique fantasy teams excluding 'Free Agent'
         unique_teams = data['Takım'].unique().tolist()
         unique_teams = [team for team in unique_teams if team != 'Free Agent']
         
@@ -1256,11 +1178,9 @@ def main():
             st.warning("Not enough teams available for trade evaluation.")
             return
 
-        # Set default indices for the selectboxes
-        default_index_team1 = 0  # First team in the list
-        default_index_team2 = 1 if len(unique_teams) > 1 else 0  # Second team if available
+        default_index_team1 = 0
+        default_index_team2 = 1 if len(unique_teams) > 1 else 0
 
-        # Select Team 1 and Team 2 with different default selections
         col_team_selection = st.columns(2)
         with col_team_selection[0]:
             team1 = st.selectbox(
@@ -1281,43 +1201,58 @@ def main():
             st.error("Please select two different teams for the trade.")
             return
 
-        # ------------------- Player Selection -------------------
-        # Get players for each team
+        # ------------------- Player Selection with Detailed Labels -------------------
         team1_players_available = data[data['Takım'] == team1]['Player_Name'].tolist()
         team2_players_available = data[data['Takım'] == team2]['Player_Name'].tolist()
 
-        # Create two columns for player selections to arrange them side by side
         col_player1, col_player2 = st.columns(2)
+        
+        # Mevcut haftayı alıyoruz
+        current_week = calculate_week()
+
+        # Her oyuncu için etiket oluşturma fonksiyonu
+        def get_player_label(player):
+            row = data[data['Player_Name'] == player]
+            if not row.empty:
+                row = row.iloc[0]
+                regular = row['Regular']
+                projection = row['Projection']
+                total = calculate_score(player, current_week, data)
+                return f"{player} | Regular: {regular} | Projection: {projection} | Total: {total:.2f}"
+            else:
+                return player
+
+        team1_options_dict = {get_player_label(player): player for player in team1_players_available}
+        team2_options_dict = {get_player_label(player): player for player in team2_players_available}
 
         with col_player1:
-            st.markdown(f"### {team1} - Select Players to Trade to {team2}")
-            team1_selected = st.multiselect(
-                f"Select Players from {team1}",
-                options=team1_players_available,
+            st.markdown(f"### {team1} - {team2}'ye Gönderilecek Oyuncuları Seçin")
+            team1_labels = list(team1_options_dict.keys())
+            team1_selected_labels = st.multiselect(
+                f"{team1} oyuncuları:",
+                options=team1_labels,
                 key="team1_selected_players"
             )
+            team1_selected = [team1_options_dict[label] for label in team1_selected_labels]
 
         with col_player2:
-            st.markdown(f"### {team2} - Select Players to Trade to {team1}")
-            team2_selected = st.multiselect(
-                f"Select Players from {team2}",
-                options=team2_players_available,
+            st.markdown(f"### {team2} - {team1}'e Gönderilecek Oyuncuları Seçin")
+            team2_labels = list(team2_options_dict.keys())
+            team2_selected_labels = st.multiselect(
+                f"{team2} oyuncuları:",
+                options=team2_labels,
                 key="team2_selected_players"
             )
+            team2_selected = [team2_options_dict[label] for label in team2_selected_labels]
 
-        # Injury Status Selection for both teams side by side
         if team1_selected or team2_selected:
             st.markdown("<h4 style='text-align: center;'>Player Injury Status</h4>", unsafe_allow_html=True)
             col_injuries_team1, col_injuries_team2 = st.columns(2)
-            
-            # Injury options and adjustments
             injury_options = {
                 "No Injury": 0,
                 "IL - Up to 4 Weeks (-1)": -1,
                 "IL - Indefinitely (-2)": -2
             }
-            
-            # Team 1 Injury Status
             team1_injury_adjustments = []
             with col_injuries_team1:
                 if team1_selected:
@@ -1332,13 +1267,11 @@ def main():
                                 options=list(injury_options.keys()),
                                 key=f"team1_{player}_injury_status"
                             )
-                        # Get the adjustment from the dictionary
                         injury_adjustment = injury_options[injury_status]
                         team1_injury_adjustments.append(injury_adjustment)
                 else:
                     team1_injury_adjustments = []
 
-            # Team 2 Injury Status
             team2_injury_adjustments = []
             with col_injuries_team2:
                 if team2_selected:
@@ -1353,32 +1286,27 @@ def main():
                                 options=list(injury_options.keys()),
                                 key=f"team2_{player}_injury_status"
                             )
-                        # Get the adjustment from the dictionary
                         injury_adjustment = injury_options[injury_status]
                         team2_injury_adjustments.append(injury_adjustment)
                 else:
                     team2_injury_adjustments = []
-
         else:
             team1_injury_adjustments = []
             team2_injury_adjustments = []
 
-        # Add a number input for selecting the number of top players
         num_top_players = st.number_input(
             "Number of Top Players to Consider for Team Averages",
             min_value=1,
-            max_value=18,  # Adjust based on your league's maximum team size
-            value=15,      # Default value
+            max_value=18,
+            value=15,
             step=1
         )
 
-        # Center the Evaluate Trade button using columns
         col_center = st.columns([1, 0.275, 1])
         with col_center[1]:
             submitted = st.button("Evaluate Trade")
 
         if submitted:
-            # Check for duplicates
             duplicate_players = set(team1_selected) & set(team2_selected)
             if duplicate_players:
                 st.error(f"Error: The following player(s) are selected for both teams: {', '.join(duplicate_players)}. Please select different players for each team.")
@@ -1398,9 +1326,8 @@ def main():
                         df_rest_of_season,
                         df_last14,
                         df_last30,
-                        num_top_players  # Pass the number of top players
+                        num_top_players
                     )
-
 
     with tab2:
         st.markdown("<h2 style='text-align: center;'>Parasal Durum</h2>", unsafe_allow_html=True)
@@ -1410,14 +1337,9 @@ def main():
         else:
             st.dataframe(df_parasal)
             
-     # ------------------- Player Scores Analysis Tab -------------------
-    
     with tab3:
-
-        # Load Player Scores Data
         try:
             player_scores = load_player_scores(player_scores_dir)
-            #st.success("Player scores data loaded successfully.")
         except ValueError as ve:
             st.error(ve)
             return
@@ -1429,10 +1351,7 @@ def main():
             st.info("No player scores data available.")
             return
 
-        # Get list of unique players
         players = sorted(player_scores['Player_Name'].unique())
-
-        # Player selection
         selected_player = st.selectbox("Select a Player", options=players)
 
         if selected_player:
@@ -1441,11 +1360,9 @@ def main():
             if player_data.empty:
                 st.warning(f"No data available for {selected_player}.")
             else:
-                # Plotting
                 fig, ax = plt.subplots(figsize=(10, 6))
                 ax.plot(player_data['Date'], player_data['Regular'], label='Regular Score', marker='o', color='blue')
                 ax.plot(player_data['Date'], player_data['Projection'], label='Projection Score', marker='o', color='orange')
-
                 ax.set_xlabel('Date')
                 ax.set_ylabel('Score')
                 ax.set_title(f'{selected_player} - Regular and Projection Scores Over Time')
@@ -1455,13 +1372,9 @@ def main():
                 plt.tight_layout()
                 st.pyplot(fig)
 
-    # ------------------- Team Scores Analysis Tab -------------------
     with tab4:
-
-        # Load Player Scores Data
         try:
             player_scores = load_player_scores(player_scores_dir)
-            #st.success("Player scores data loaded successfully.")
         except ValueError as ve:
             st.error(ve)
             return
@@ -1473,39 +1386,29 @@ def main():
             st.info("No player scores data available.")
             return
 
-        # Get list of teams excluding 'Free Agent'
         teams = sorted([team for team in data['Takım'].unique() if team != 'Free Agent'])
-
-        # Team selection
         selected_team = st.selectbox("Select a Team", options=teams)
 
         if selected_team:
-            # Get list of players in the selected team
             team_players = data[data['Takım'] == selected_team]['Player_Name'].unique()
 
             if len(team_players) == 0:
                 st.warning(f"No players found for team {selected_team}.")
             else:
-                # Allow user to select which players to include
                 selected_players = st.multiselect("Select Players to Include", options=team_players, default=team_players)
 
                 if not selected_players:
                     st.warning("No players selected.")
                 else:
-                    # Allow user to select which scores to display
                     score_type = st.radio(
                         "Select Score Type to Display",
                         options=["Regular", "Projection", "Both"],
-                        index=2  # Default to "Both"
+                        index=2
                     )
 
-                    # Initialize the plot
                     fig, ax = plt.subplots(figsize=(12, 8))
-
-                    # Define line styles for Regular and Projection scores
                     line_styles = {'Regular': '-', 'Projection': '--'}
 
-                    # For each selected player, plot their scores over time based on selected score type
                     for player in selected_players:
                         player_data = player_scores[player_scores['Player_Name'] == player].sort_values('Date')
                         if player_data.empty:
@@ -1513,14 +1416,12 @@ def main():
                             continue
                         else:
                             if score_type in ["Regular", "Both"]:
-                                # Plot Regular Score
                                 line1, = ax.plot(
                                     player_data['Date'],
                                     player_data['Regular'],
                                     linestyle=line_styles['Regular'],
                                     marker='o'
                                 )
-                                # Annotate the last point with player name
                                 ax.annotate(
                                     f"{player} - Regular",
                                     xy=(player_data['Date'].iloc[-1], player_data['Regular'].iloc[-1]),
@@ -1530,14 +1431,12 @@ def main():
                                     fontsize=9
                                 )
                             if score_type in ["Projection", "Both"]:
-                                # Plot Projection Score
                                 line2, = ax.plot(
                                     player_data['Date'],
                                     player_data['Projection'],
                                     linestyle=line_styles['Projection'],
                                     marker='x'
                                 )
-                                # Annotate the last point with player name
                                 ax.annotate(
                                     f"{player} - Projection",
                                     xy=(player_data['Date'].iloc[-1], player_data['Projection'].iloc[-1]),
@@ -1553,14 +1452,10 @@ def main():
                         ax.set_title(f'{selected_team} Players - Regular and Projection Scores Over Time')
                     else:
                         ax.set_title(f'{selected_team} Players - {score_type} Scores Over Time')
-                    # Remove the legend
-                    # ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
                     ax.grid(True)
                     plt.xticks(rotation=45)
                     plt.tight_layout()
                     st.pyplot(fig)
-
-# ----------------------- Run the Application -----------------------
 
 if __name__ == "__main__":
     main()
