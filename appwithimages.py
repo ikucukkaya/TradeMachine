@@ -278,6 +278,20 @@ def calculate_team_averages(df, player_list_normalized, num_top_players):
 
     return team_averages
 
+# ----------------------- Parasal Durum Data Yükleme Fonksiyonu -----------------------
+@st.cache_data
+def load_parasal_durum_data():
+    """
+    Aynı data klasöründe bulunan Parasal_Durum.xlsx dosyasını yükler.
+    """
+    parasal_durum_path = os.path.join(data_dir, "Parasal_Durum.xlsx")
+    try:
+        df_parasal = pd.read_excel(parasal_durum_path)
+        return df_parasal
+    except Exception as e:
+        st.error(f"Parasal Durum verileri yüklenemedi: {e}")
+        return pd.DataFrame()
+
 # ----------------------- Trade Evaluation Function -----------------------
 
 def evaluate_trade(data, team1_players, team2_players, team1_injury_adjustments, team2_injury_adjustments, team1_name, team2_name, df_regular_season, df_rest_of_season, df_last14, df_last30, num_top_players):
@@ -1222,7 +1236,13 @@ def main():
         return
 
     # ------------------- Create Tabs -------------------
-    tab1, tab2, tab3 = st.tabs(["Trade Evaluation", "Player Scores Analysis", "Team Scores Analysis"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Trade Evaluation",
+        "Parasal Durum",
+        "Player Scores Analysis",
+        "Team Scores Analysis"
+    ])
+    
 
     # ------------------- Trade Evaluation Tab -------------------
     with tab1:
@@ -1381,8 +1401,18 @@ def main():
                         num_top_players  # Pass the number of top players
                     )
 
-     # ------------------- Player Scores Analysis Tab -------------------
+
     with tab2:
+        st.markdown("<h2 style='text-align: center;'>Parasal Durum</h2>", unsafe_allow_html=True)
+        df_parasal = load_parasal_durum_data()
+        if df_parasal.empty:
+            st.warning("Parasal Durum verisi bulunamadı veya boş.")
+        else:
+            st.dataframe(df_parasal)
+            
+     # ------------------- Player Scores Analysis Tab -------------------
+    
+    with tab3:
 
         # Load Player Scores Data
         try:
@@ -1426,7 +1456,7 @@ def main():
                 st.pyplot(fig)
 
     # ------------------- Team Scores Analysis Tab -------------------
-    with tab3:
+    with tab4:
 
         # Load Player Scores Data
         try:
