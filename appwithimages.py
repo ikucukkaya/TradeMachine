@@ -1330,7 +1330,7 @@ def main():
                     )
 
     with tab2:
-        st.markdown("<h2 style='text-align: center;'>Parasal Durum</h2>", unsafe_allow_html=True)
+        #st.markdown("<h2 style='text-align: center;'>Parasal Durum</h2>", unsafe_allow_html=True)
         df_parasal = load_parasal_durum_data()
         if df_parasal.empty:
             st.warning("Parasal Durum verisi bulunamadı veya boş.")
